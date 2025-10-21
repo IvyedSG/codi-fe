@@ -1,4 +1,3 @@
-// Kotlin
 package org.codi.features.auth
 
 import androidx.compose.foundation.Image
@@ -9,18 +8,17 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import codi.composeapp.generated.resources.Res
@@ -30,18 +28,24 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 
-object LoginScreen : Screen {
+object RegisterScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
 
+        var name by remember { mutableStateOf("") }
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
         var isPasswordVisible by remember { mutableStateOf(false) }
+        var acceptedTerms by remember { mutableStateOf(false) }
         var isLoading by remember { mutableStateOf(false) }
 
-        val buttonEnabled = !isLoading && email.isNotEmpty() && password.isNotEmpty()
+        val buttonEnabled = !isLoading &&
+                           name.isNotEmpty() &&
+                           email.isNotEmpty() &&
+                           password.isNotEmpty() &&
+                           acceptedTerms
 
         Surface(
             modifier = Modifier
@@ -56,37 +60,56 @@ object LoginScreen : Screen {
                     .padding(horizontal = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(80.dp))
+                Spacer(modifier = Modifier.height(60.dp))
 
                 Image(
                     painter = painterResource(Res.drawable.logo),
                     contentDescription = "Logo CODI",
-                    modifier = Modifier.size(200.dp)
+                    modifier = Modifier.size(160.dp)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "Crear Cuenta",
+                    style = CodiThemeValues.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = CodiThemeValues.colorScheme.onBackground
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                Text(
-                    text = "\"",
-                    style = CodiThemeValues.typography.displaySmall,
-                    color = CodiThemeValues.colorScheme.secondary,
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = "Cada recibo deja una huella.",
-                    style = CodiThemeValues.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
-                    color = CodiThemeValues.colorScheme.onBackground,
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = "Hazla verde.",
-                    style = CodiThemeValues.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = CodiThemeValues.colorScheme.primary,
-                    textAlign = TextAlign.Center
+                // Campo de Nombre
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    placeholder = {
+                        Text(
+                            "Nombre completo",
+                            color = CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Nombre",
+                            tint = CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    },
+                    shape = CodiThemeValues.shapes.medium,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = CodiThemeValues.colorScheme.surface,
+                        focusedContainerColor = CodiThemeValues.colorScheme.surface,
+                        unfocusedBorderColor = CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.2f),
+                        focusedBorderColor = CodiThemeValues.colorScheme.primary
+                    ),
+                    modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(48.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
+                // Campo de Email
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
@@ -116,6 +139,7 @@ object LoginScreen : Screen {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Campo de Contraseña
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
@@ -153,12 +177,36 @@ object LoginScreen : Screen {
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Checkbox de términos y condiciones
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = acceptedTerms,
+                        onCheckedChange = { acceptedTerms = it },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = CodiThemeValues.colorScheme.primary,
+                            uncheckedColor = CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Acepto los términos y condiciones",
+                        style = CodiThemeValues.typography.bodySmall,
+                        color = CodiThemeValues.colorScheme.onBackground
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(32.dp))
 
+                // Botón de Registrarse
                 Button(
                     onClick = {
                         isLoading = true
-                        if (email.isNotEmpty() && password.isNotEmpty()) {
+                        if (buttonEnabled) {
                             navigator.push(HomeTabNavigator)
                         }
                         isLoading = false
@@ -183,7 +231,7 @@ object LoginScreen : Screen {
                         )
                     } else {
                         Text(
-                            text = "Ingresar",
+                            text = "Registrarse",
                             style = CodiThemeValues.typography.labelLarge,
                             color = CodiThemeValues.colorScheme.onTertiary
                         )
@@ -192,20 +240,21 @@ object LoginScreen : Screen {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // Enlace para ir a login
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "¿Todavía no tienes una cuenta? ",
+                        text = "¿Ya tienes una cuenta? ",
                         style = CodiThemeValues.typography.bodySmall,
                         color = CodiThemeValues.colorScheme.onBackground
                     )
                     TextButton(
-                        onClick = { navigator.push(RegisterScreen) },
+                        onClick = { navigator.pop() },
                         contentPadding = PaddingValues(0.dp)
                     ) {
                         Text(
-                            text = "Crear Cuenta",
+                            text = "Iniciar Sesión",
                             style = CodiThemeValues.typography.labelMedium,
                             color = CodiThemeValues.colorScheme.primary
                         )

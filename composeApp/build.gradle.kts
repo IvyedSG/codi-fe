@@ -38,13 +38,18 @@ kotlin {
                 implementation(libs.androidx.lifecycle.viewmodelCompose)
                 implementation(libs.androidx.lifecycle.runtimeCompose)
                 implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
+
+                // Voyager para navegación multiplataforma
+                implementation("cafe.adriel.voyager:voyager-navigator:1.1.0-beta02")
+                implementation("cafe.adriel.voyager:voyager-screenmodel:1.1.0-beta02")
+                implementation("cafe.adriel.voyager:voyager-tab-navigator:1.1.0-beta02")
+                implementation("cafe.adriel.voyager:voyager-transitions:1.1.0-beta02")
             }
         }
         val androidMain by getting {
             dependencies {
                 implementation(compose.preview)
                 implementation(libs.androidx.activity.compose)
-                implementation("androidx.navigation:navigation-compose:2.5.3")
             }
         }
         val commonTest by getting {
