@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -44,13 +45,34 @@ kotlin {
                 implementation("cafe.adriel.voyager:voyager-screenmodel:1.1.0-beta02")
                 implementation("cafe.adriel.voyager:voyager-tab-navigator:1.1.0-beta02")
                 implementation("cafe.adriel.voyager:voyager-transitions:1.1.0-beta02")
+
+                // Ktor Client
+                implementation("io.ktor:ktor-client-core:2.3.12")
+                implementation("io.ktor:ktor-client-content-negotiation:2.3.12")
+                implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
             }
         }
         val androidMain by getting {
             dependencies {
                 implementation(compose.preview)
                 implementation(libs.androidx.activity.compose)
+                // Ktor Android Engine
+                implementation("io.ktor:ktor-client-android:2.3.12")
             }
+        }
+        val iosMain by creating {
+            dependsOn(commonMain)
+            dependencies {
+                // Ktor iOS Engine
+                implementation("io.ktor:ktor-client-darwin:2.3.12")
+            }
+        }
+        val iosArm64Main by getting {
+            dependsOn(iosMain)
+        }
+        val iosSimulatorArm64Main by getting {
+            dependsOn(iosMain)
         }
         val commonTest by getting {
             dependencies {
