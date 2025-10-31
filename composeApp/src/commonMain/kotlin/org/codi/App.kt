@@ -3,6 +3,7 @@ package org.codi
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import org.codi.theme.CodiTheme
+import org.codi.ui.ToastHost
 import cafe.adriel.voyager.navigator.Navigator
 import org.codi.features.auth.LoginScreen
 
@@ -17,5 +18,8 @@ fun App() {
         )
 
         Navigator(LoginScreen)
+
+        // Toast global
+        ToastHost()
     }
 }

@@ -2,6 +2,8 @@ package org.codi.data.api
 
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.logging.*
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 
@@ -17,11 +19,9 @@ expect fun createHttpClient(): HttpClient
  */
 object ApiClient {
 
-    private const val BASE_URL = "https://api.ejemplo.com" // Cambia esto a tu URL base
-
     /**
      * Cliente HTTP configurado con negociación de contenido JSON
-     * Usa el motor específico de cada plataforma
+     * Usa el motor específico de cada plataforma y agrega logging/timeout.
      */
     private val httpClient = createHttpClient().config {
         install(ContentNegotiation) {
@@ -31,12 +31,21 @@ object ApiClient {
                 ignoreUnknownKeys = true
             })
         }
+        install(Logging) {
+            logger = Logger.SIMPLE
+            level = LogLevel.INFO
+        }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 15000
+            connectTimeoutMillis = 10000
+            socketTimeoutMillis = 15000
+        }
     }
 
     /**
      * Router API para hacer llamadas a endpoints
      */
-    val router = ApiRouter(httpClient, BASE_URL)
+    val router = ApiRouter(httpClient, BASE_API_URL)
 }
 
 /**
@@ -70,4 +79,3 @@ object ApiClient {
  *     queryParams = mapOf("page" to "1", "limit" to "10")
  * )
  */
-
