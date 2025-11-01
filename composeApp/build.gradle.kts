@@ -60,6 +60,8 @@ kotlin {
                 implementation(libs.androidx.activity.compose)
                 // Ktor Android Engine
                 implementation("io.ktor:ktor-client-android:2.3.12")
+                // Google Sign-In
+                implementation("com.google.android.gms:play-services-auth:20.7.0")
             }
         }
         val iosMain by creating {

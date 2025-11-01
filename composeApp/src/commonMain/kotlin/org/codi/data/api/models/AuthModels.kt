@@ -17,11 +17,17 @@ data class LoginRequest(
 )
 
 @Serializable
+data class GoogleSignInRequest(
+    val idToken: String
+)
+
+@Serializable
 data class UserDto(
     val id: String,
     val nombre: String,
     val apellido: String,
-    val email: String
+    val email: String,
+    val proveedorAuth: String? = null
 )
 
 @Serializable
@@ -39,5 +45,5 @@ data class RegisterResponse(
     val error: String? = null
 )
 
-// Reusar el mismo esquema para login
 typealias LoginResponse = RegisterResponse
+

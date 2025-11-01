@@ -11,7 +11,7 @@ private const val KEY_TOKEN = "auth_token"
 
 actual object TokenStorage {
     private val prefs: SharedPreferences by lazy {
-        AppContextHolder.appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        AppContextHolder.getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
     actual suspend fun saveToken(token: String) = withContext(Dispatchers.IO) {

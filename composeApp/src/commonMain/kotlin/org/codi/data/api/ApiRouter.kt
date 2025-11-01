@@ -103,4 +103,13 @@ class ApiRouter(
             body = loginRequest
         )
     }
+
+    // Nueva función para Google Sign-In
+    suspend fun googleSignIn(googleRequest: GoogleSignInRequest): LoginResponse {
+        return request<LoginResponse>(
+            method = HttpMethod.Post,
+            path = "/auth/google",
+            body = googleRequest
+        )
+    }
 }

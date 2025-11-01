@@ -36,6 +36,8 @@ import io.ktor.http.HttpStatusCode
 import org.codi.data.api.models.LoginRequest
 import org.codi.data.storage.TokenStorage
 import org.codi.ui.ToastManager
+import org.codi.data.auth.rememberGoogleSignInLauncher
+import org.codi.data.api.models.GoogleSignInRequest
 
 object LoginScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -49,6 +51,46 @@ object LoginScreen : Screen {
         var isLoading by remember { mutableStateOf(false) }
 
         val scope = rememberCoroutineScope()
+
+        // Configurar el launcher de Google Sign-In
+        val launchGoogleSignIn = rememberGoogleSignInLauncher { result ->
+            scope.launch {
+                isLoading = true
+                try {
+                    if (result.success && result.idToken != null) {
+                        // Enviar el idToken al backend
+                        val googleReq = GoogleSignInRequest(idToken = result.idToken)
+                        val resp = ApiClient.router.googleSignIn(googleReq)
+
+                        if (resp.success && resp.data != null) {
+                            resp.data.token.takeIf { it.isNotBlank() }?.let { token ->
+                                try {
+                                    TokenStorage.saveToken(token)
+                                } catch (_: Throwable) {}
+                            }
+                            navigator.replace(HomeTabNavigator)
+                        } else {
+                            val msg = resp.message.takeIf { it.isNotBlank() } ?: resp.error ?: "Error al iniciar sesión con Google"
+                            ToastManager.show(msg)
+                        }
+                    } else {
+                        ToastManager.show(result.error ?: "Error al iniciar sesión con Google")
+                    }
+                } catch (ae: ApiException) {
+                    val bodyText = ae.body?.takeIf { it.isNotBlank() }
+                    val friendly = when (ae.status) {
+                        HttpStatusCode.BadRequest -> bodyText ?: "Token de Google inválido"
+                        HttpStatusCode.Unauthorized -> bodyText ?: "No autorizado"
+                        else -> if (ae.status.value >= 500) "Error interno" else (bodyText ?: "Error al iniciar sesión")
+                    }
+                    ToastManager.show(friendly)
+                } catch (t: Throwable) {
+                    ToastManager.show(t.message ?: "Error en la conexión")
+                } finally {
+                    isLoading = false
+                }
+            }
+        }
 
         val buttonEnabled = !isLoading && email.isNotEmpty() && password.isNotEmpty()
 
@@ -222,6 +264,70 @@ object LoginScreen : Screen {
                                 text = "Ingresar",
                                 style = CodiThemeValues.typography.labelLarge,
                                 color = CodiThemeValues.colorScheme.onTertiary
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Divisor "o"
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        HorizontalDivider(
+                            modifier = Modifier.weight(1f),
+                            color = CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.2f)
+                        )
+                        Text(
+                            text = " o ",
+                            style = CodiThemeValues.typography.bodySmall,
+                            color = CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.6f),
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.weight(1f),
+                            color = CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.2f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Botón de Google Sign-In
+                    OutlinedButton(
+                        onClick = {
+                            if (!isLoading) {
+                                launchGoogleSignIn()
+                            }
+                        },
+                        enabled = !isLoading,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = CodiThemeValues.colorScheme.surface,
+                            contentColor = CodiThemeValues.colorScheme.onSurface
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.3f)
+                        ),
+                        shape = CodiThemeValues.shapes.medium,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            // Icono de Google (usando una aproximación con texto)
+                            Text(
+                                text = "G",
+                                style = CodiThemeValues.typography.headlineSmall,
+                                color = CodiThemeValues.colorScheme.primary,
+                                modifier = Modifier.padding(end = 12.dp)
+                            )
+                            Text(
+                                text = "Continuar con Google",
+                                style = CodiThemeValues.typography.labelLarge
                             )
                         }
                     }
