@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -33,11 +34,33 @@ fun PersonalStatsCard(
                 style = CodiThemeValues.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 color = CodiThemeValues.colorScheme.onBackground
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                StatItem(Icons.Default.Receipt, cantidadRecibos.toString(), "Recibos")
-                StatItem(Icons.Default.Eco, cantidadRecibosVerdes.toString(), "Eco")
-                StatItem(Icons.Default.Cloud, "${(co2Total * 10).toInt() / 10.0} Kg", "CO2 Total")
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Una sola fila con los 4 datos
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                StatItem(
+                    icon = Icons.Default.Receipt,
+                    value = cantidadRecibos.toString(),
+                    label = "Recibos Totales"
+                )
+                StatItem(
+                    icon = Icons.Default.Eco,
+                    value = cantidadRecibosVerdes.toString(),
+                    label = "Recibos Verdes"
+                )
+                StatItem(
+                    icon = Icons.Default.Cloud,
+                    value = "${(co2Total * 10).toInt() / 10.0}",
+                    label = "CO2 Total"
+                )
+                StatItem(
+                    icon = Icons.Default.Analytics,
+                    value = "${(co2Promedio * 10).toInt() / 10.0}",
+                    label = "CO2 Promedio"
+                )
             }
         }
     }

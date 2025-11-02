@@ -15,17 +15,23 @@ import org.codi.theme.PrimaryGreen
 fun StatItem(icon: ImageVector, value: String, label: String) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.width(IntrinsicSize.Min)
     ) {
-        Icon(icon, null, tint = PrimaryGreen, modifier = Modifier.size(24.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = PrimaryGreen,
+            modifier = Modifier.size(20.dp)
+        )
         Text(
             text = value,
-            style = CodiThemeValues.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            style = CodiThemeValues.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
             color = CodiThemeValues.colorScheme.onBackground
         )
         Text(
             text = label,
-            style = CodiThemeValues.typography.bodySmall,
+            style = CodiThemeValues.typography.labelSmall,
             color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.6f)
         )
     }

@@ -17,7 +17,12 @@ import org.codi.theme.CodiThemeValues
 import org.codi.theme.PrimaryGreen
 
 @Composable
-fun UserInfoCard(nombre: String, apellido: String, correo: String) {
+fun UserInfoCard(
+    nombre: String,
+    apellido: String,
+    correo: String,
+    onEditClick: () -> Unit = {}
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -60,7 +65,7 @@ fun UserInfoCard(nombre: String, apellido: String, correo: String) {
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedButton(
-                onClick = { /* TODO: Editar perfil */ },
+                onClick = onEditClick,
                 modifier = Modifier.fillMaxWidth().height(40.dp),
                 shape = RoundedCornerShape(20.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryGreen),

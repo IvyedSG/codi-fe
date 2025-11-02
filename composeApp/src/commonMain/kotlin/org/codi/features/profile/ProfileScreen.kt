@@ -7,14 +7,20 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import org.codi.common.components.TopBar
+import org.codi.features.auth.LoginScreen
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.PrimaryGreen
 import org.codi.features.profile.components.ProfileContent
+import org.codi.features.profile.components.EditProfileDialog
 
 @Composable
 fun ProfileScreen() {
     val viewModel = remember { ProfileViewModel() }
+    // Acceder al Navigator principal (fuera del TabNavigator)
+    val navigator = LocalNavigator.currentOrThrow.parent ?: LocalNavigator.currentOrThrow
 
     LaunchedEffect(Unit) {
         viewModel.loadProfile()
@@ -33,9 +39,22 @@ fun ProfileScreen() {
                 message = currentState.message,
                 onRetry = { viewModel.loadProfile() }
             )
-            is ProfileState.Success -> ProfileContent(profileData = currentState.profile)
+            is ProfileState.Success -> {
+                ProfileContent(
+                    profileData = currentState.profile,
+                    viewModel = viewModel,
+                    onLogout = {
+                        viewModel.logout()
+                        // Reemplazar con LoginScreen en el Navigator principal
+                        navigator.replace(LoginScreen)
+                    }
+                )
+            }
         }
     }
+
+    // Diálogo de edición de perfil
+    EditProfileDialog(viewModel = viewModel)
 }
 
 @Composable

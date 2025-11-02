@@ -125,4 +125,18 @@ class ApiRouter(
         )
     }
 
+    /**
+     * Actualiza el perfil del usuario (nombre y apellido).
+     * @param userId El ID del usuario (UUID).
+     * @param updateRequest Los nuevos datos del perfil.
+     */
+    suspend fun updateUserProfile(userId: String, updateRequest: ProfileUpdateRequest): ProfileUpdateResponse {
+        return request<ProfileUpdateResponse>(
+            method = HttpMethod.Put,
+            path = "/perfil/{userId}",
+            routeParams = mapOf("userId" to userId),
+            body = updateRequest
+        )
+    }
+
 }

@@ -41,3 +41,18 @@ data class ProfileResponse(
     val data: ProfileData? = null,
     val error: String? = null
 )
+
+// 4. Modelo de Request para PUT /perfil/{userId}
+@Serializable
+data class ProfileUpdateRequest(
+    val nombre: String,
+    val apellido: String
+)
+
+// 5. Modelo de Respuesta para PUT /perfil/{userId}
+@Serializable
+data class ProfileUpdateResponse(
+    val success: Boolean,
+    val message: String,
+    val error: String? = null
+)

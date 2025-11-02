@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -12,10 +12,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.codi.data.api.models.ProfileResponse
+import org.codi.features.profile.ProfileViewModel
 import org.codi.theme.CodiThemeValues
 
 @Composable
-fun ProfileContent(profileData: ProfileResponse) {
+fun ProfileContent(
+    profileData: ProfileResponse,
+    viewModel: ProfileViewModel,
+    onLogout: () -> Unit
+) {
     val userData = profileData.data?.datosUsuario
     val stats = profileData.data?.estadisticas
 
@@ -31,7 +36,8 @@ fun ProfileContent(profileData: ProfileResponse) {
         UserInfoCard(
             nombre = userData?.nombre ?: "",
             apellido = userData?.apellido ?: "",
-            correo = userData?.correo ?: ""
+            correo = userData?.correo ?: "",
+            onEditClick = { viewModel.openEditDialog() }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -58,7 +64,7 @@ fun ProfileContent(profileData: ProfileResponse) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = { /* TODO: Cerrar sesión */ },
+            onClick = onLogout,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
@@ -69,7 +75,7 @@ fun ProfileContent(profileData: ProfileResponse) {
             shape = CodiThemeValues.shapes.medium
         ) {
             Icon(
-                imageVector = Icons.Default.ExitToApp,
+                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                 contentDescription = null,
                 modifier = Modifier.size(18.dp)
             )

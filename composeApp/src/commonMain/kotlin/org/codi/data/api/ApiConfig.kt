@@ -1,8 +1,8 @@
 package org.codi.data.api
 
 /**
- * Expect declaration for the base API URL used by platform-specific implementations.
- * Each platform (android/ios/etc.) must provide an `actual` value.
+ * Declaración expect de la URL base de la API.
+ * Cada plataforma implementará su propia versión.
  */
 expect val BASE_API_URL: String
 
