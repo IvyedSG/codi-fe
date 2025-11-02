@@ -12,15 +12,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import org.codi.data.api.models.LastReceipt
 import org.codi.theme.CodiThemeValues
 
 @Composable
-fun LastReceiptCard(
-    storeName: String,
-    date: String,
-    amount: String,
-    co2Amount: String
-) {
+fun LastReceiptCard(lastReceipt: LastReceipt) {
+    // Formatear la fecha
+    val date = try {
+        val parts = lastReceipt.fechaBoleta.split("T")[0].split("-")
+        if (parts.size == 3) {
+            val day = parts[2]
+            val month = getMonthName(parts[1].toInt())
+            val year = parts[0]
+            "$day $month $year"
+        } else {
+            lastReceipt.fechaBoleta.split("T")[0]
+        }
+    } catch (_: Exception) {
+        lastReceipt.fechaBoleta.split("T")[0]
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = CodiThemeValues.shapes.large,
@@ -49,9 +60,15 @@ fun LastReceiptCard(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = storeName,
+                        text = lastReceipt.nombreTienda,
                         style = CodiThemeValues.typography.bodyLarge,
                         color = CodiThemeValues.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = lastReceipt.categoriaTienda,
+                        style = CodiThemeValues.typography.bodySmall,
+                        color = CodiThemeValues.colorScheme.primary.copy(alpha = 0.6f)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
@@ -77,14 +94,14 @@ fun LastReceiptCard(
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = amount,
+                            text = "S/ ${(lastReceipt.precioTotal * 100).toInt() / 100.0}",
                             style = CodiThemeValues.typography.bodyMedium,
                             color = CodiThemeValues.colorScheme.primary.copy(alpha = 0.7f)
                         )
                     }
                 }
 
-                // Logo placeholder
+                // Logo placeholder con inicial de la tienda
                 Box(
                     modifier = Modifier
                         .size(64.dp)
@@ -92,11 +109,10 @@ fun LastReceiptCard(
                         .background(CodiThemeValues.colorScheme.surface),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Store,
-                        contentDescription = "Logo",
-                        tint = CodiThemeValues.colorScheme.primary,
-                        modifier = Modifier.size(32.dp)
+                    Text(
+                        text = lastReceipt.nombreTienda.firstOrNull()?.uppercase() ?: "T",
+                        style = CodiThemeValues.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        color = CodiThemeValues.colorScheme.primary
                     )
                 }
             }
@@ -110,7 +126,7 @@ fun LastReceiptCard(
             ) {
                 Column {
                     Text(
-                        text = co2Amount,
+                        text = "${(lastReceipt.co2Total * 10).toInt() / 10.0} Kg",
                         style = CodiThemeValues.typography.displaySmall.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -140,6 +156,25 @@ fun LastReceiptCard(
                 }
             }
         }
+    }
+}
+
+// Función auxiliar para obtener el nombre del mes en español
+private fun getMonthName(month: Int): String {
+    return when (month) {
+        1 -> "Ene"
+        2 -> "Feb"
+        3 -> "Mar"
+        4 -> "Abr"
+        5 -> "May"
+        6 -> "Jun"
+        7 -> "Jul"
+        8 -> "Ago"
+        9 -> "Sep"
+        10 -> "Oct"
+        11 -> "Nov"
+        12 -> "Dic"
+        else -> ""
     }
 }
 

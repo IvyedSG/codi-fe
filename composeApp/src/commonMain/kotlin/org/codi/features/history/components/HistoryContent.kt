@@ -9,10 +9,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.codi.data.api.models.HistoryResponse
 import org.codi.theme.CodiThemeValues
 
 @Composable
-fun HistoryContent() {
+fun HistoryContent(historyData: HistoryResponse) {
+    val activitySummary = historyData.data?.resumenActividad
+    val recentPurchases = historyData.data?.comprasRecientes ?: emptyList()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -30,22 +34,35 @@ fun HistoryContent() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Resumen de actividad
-        ActivitySummaryCard()
+        // Resumen de actividad con datos del endpoint
+        if (activitySummary != null) {
+            ActivitySummaryCard(activitySummary = activitySummary)
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         // Compras recientes
-        Text(
-            text = "Compras recientes",
-            style = CodiThemeValues.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = CodiThemeValues.colorScheme.onBackground
-        )
+        if (recentPurchases.isNotEmpty()) {
+            Text(
+                text = "Compras recientes",
+                style = CodiThemeValues.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = CodiThemeValues.colorScheme.onBackground
+            )
 
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        // Tarjeta de compra reciente
-        RecentPurchaseCard()
+            // Mostrar todas las compras recientes
+            recentPurchases.forEach { purchase ->
+                RecentPurchaseCard(purchase = purchase)
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        } else {
+            Text(
+                text = "No hay compras recientes",
+                style = CodiThemeValues.typography.bodyMedium,
+                color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.6f)
+            )
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
     }

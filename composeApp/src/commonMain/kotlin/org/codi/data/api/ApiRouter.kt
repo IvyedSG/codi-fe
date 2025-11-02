@@ -139,4 +139,28 @@ class ApiRouter(
         )
     }
 
+    /**
+     * Obtiene el historial de compras del usuario.
+     * @param userId El ID del usuario (UUID).
+     */
+    suspend fun getUserHistory(userId: String): HistoryResponse {
+        return request<HistoryResponse>(
+            method = HttpMethod.Get,
+            path = "/historial/{userId}",
+            routeParams = mapOf("userId" to userId)
+        )
+    }
+
+    /**
+     * Obtiene los datos de inicio del usuario.
+     * @param userId El ID del usuario (UUID).
+     */
+    suspend fun getHomeData(userId: String): HomeResponse {
+        return request<HomeResponse>(
+            method = HttpMethod.Get,
+            path = "/inicio/{userId}",
+            routeParams = mapOf("userId" to userId)
+        )
+    }
+
 }

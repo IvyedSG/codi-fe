@@ -12,11 +12,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import org.codi.data.api.models.ActivitySummary
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.PrimaryGreen
 
 @Composable
-fun ActivitySummaryCard() {
+fun ActivitySummaryCard(activitySummary: ActivitySummary) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -36,14 +37,14 @@ fun ActivitySummaryCard() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Tres círculos con estadísticas
+            // Tres círculos con estadísticas del endpoint
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 StatCircle(
                     icon = Icons.Default.ShoppingCart,
-                    value = "4",
+                    value = activitySummary.cantidadBoletas.toString(),
                     label = "Compras",
                     backgroundColor = PrimaryGreen.copy(alpha = 0.15f),
                     iconTint = PrimaryGreen
@@ -51,15 +52,15 @@ fun ActivitySummaryCard() {
 
                 StatCircle(
                     icon = Icons.Default.Eco,
-                    value = "2",
-                    label = "Ejemplares",
+                    value = activitySummary.cantidadBoletasVerdes.toString(),
+                    label = "Verdes",
                     backgroundColor = PrimaryGreen.copy(alpha = 0.15f),
                     iconTint = PrimaryGreen
                 )
 
                 StatCircle(
                     icon = Icons.Default.Cloud,
-                    value = "48.1 Kg",
+                    value = "${(activitySummary.co2Total * 10).toInt() / 10.0} Kg",
                     label = "CO2 Total",
                     backgroundColor = PrimaryGreen.copy(alpha = 0.15f),
                     iconTint = PrimaryGreen
@@ -68,8 +69,12 @@ fun ActivitySummaryCard() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Gráfico de barras
-            ImpactBarChart()
+            // Gráfico de barras con datos del endpoint
+            ImpactBarChart(
+                cantidadVerdes = activitySummary.cantidadBoletasVerdes,
+                cantidadAmarillas = activitySummary.cantidadBoletasAmarillas,
+                cantidadRojas = activitySummary.cantidadBoletasRojas
+            )
         }
     }
 }

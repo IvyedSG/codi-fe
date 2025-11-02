@@ -1,4 +1,4 @@
-package org.codi.features.home
+package org.codi.features.history
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -8,16 +8,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.codi.common.components.TopBar
-import org.codi.features.home.components.HomeContent
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.PrimaryGreen
+import org.codi.features.history.components.HistoryContent
 
 @Composable
-fun HomeScreen() {
-    val viewModel = remember { HomeViewModel() }
+fun HistoryScreen() {
+    val viewModel = remember { HistoryViewModel() }
 
     LaunchedEffect(Unit) {
-        viewModel.loadHomeData()
+        viewModel.loadHistory()
     }
 
     Column(
@@ -25,16 +25,16 @@ fun HomeScreen() {
             .fillMaxSize()
             .background(CodiThemeValues.colorScheme.background)
     ) {
-        TopBar(title = "Bienvenido a Codi")
+        TopBar(title = "Historial")
 
         when (val currentState = viewModel.state) {
-            is HomeState.Loading -> LoadingState()
-            is HomeState.Error -> ErrorState(
+            is HistoryState.Loading -> LoadingState()
+            is HistoryState.Error -> ErrorState(
                 message = currentState.message,
-                onRetry = { viewModel.loadHomeData() }
+                onRetry = { viewModel.loadHistory() }
             )
-            is HomeState.Success -> {
-                HomeContent(homeData = currentState.home)
+            is HistoryState.Success -> {
+                HistoryContent(historyData = currentState.history)
             }
         }
     }
@@ -74,3 +74,4 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
         }
     }
 }
+

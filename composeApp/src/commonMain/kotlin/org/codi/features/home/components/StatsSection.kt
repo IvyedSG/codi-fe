@@ -6,19 +6,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun StatsSection() {
+fun StatsSection(
+    puntosVerdes: Int,
+    co2Acumulado: Double
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         GreenReceiptsColumn(
             modifier = Modifier.weight(1f),
-            count = "3"
+            count = puntosVerdes.toString()
         )
 
         CO2AccumulatedColumn(
             modifier = Modifier.weight(1f),
-            amount = "10 Kg"
+            amount = "${(co2Acumulado * 10).toInt() / 10.0} Kg"
         )
     }
 }

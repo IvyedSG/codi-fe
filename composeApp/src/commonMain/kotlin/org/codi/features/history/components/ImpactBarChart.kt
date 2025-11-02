@@ -8,9 +8,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.codi.theme.PrimaryGreen
+import kotlin.math.max
 
 @Composable
-fun ImpactBarChart() {
+fun ImpactBarChart(
+    cantidadVerdes: Int,
+    cantidadAmarillas: Int,
+    cantidadRojas: Int
+) {
+    // Calcular altura proporcional (mínimo 30dp, máximo 60dp)
+    val maxValue = max(max(cantidadVerdes, cantidadAmarillas), cantidadRojas)
+    val baseHeight = 30.dp
+    val maxHeight = 60.dp
+
+    val heightVerdes = if (maxValue > 0) {
+        baseHeight + ((cantidadVerdes.toFloat() / maxValue) * (maxHeight.value - baseHeight.value)).dp
+    } else baseHeight
+
+    val heightAmarillas = if (maxValue > 0) {
+        baseHeight + ((cantidadAmarillas.toFloat() / maxValue) * (maxHeight.value - baseHeight.value)).dp
+    } else baseHeight
+
+    val heightRojas = if (maxValue > 0) {
+        baseHeight + ((cantidadRojas.toFloat() / maxValue) * (maxHeight.value - baseHeight.value)).dp
+    } else baseHeight
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -23,24 +45,24 @@ fun ImpactBarChart() {
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             BarItem(
-                count = "2",
-                label = "Ejemplar",
+                count = cantidadVerdes.toString(),
+                label = "Verdes",
                 color = PrimaryGreen,
-                height = 50.dp
+                height = heightVerdes
             )
 
             BarItem(
-                count = "1",
-                label = "Regular",
+                count = cantidadAmarillas.toString(),
+                label = "Amarillas",
                 color = Color(0xFFFF9800),
-                height = 35.dp
+                height = heightAmarillas
             )
 
             BarItem(
-                count = "1",
-                label = "Alto Impacto",
+                count = cantidadRojas.toString(),
+                label = "Rojas",
                 color = Color(0xFFF44336),
-                height = 35.dp
+                height = heightRojas
             )
         }
     }
