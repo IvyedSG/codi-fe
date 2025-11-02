@@ -9,6 +9,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.codi.data.api.models.*
+import org.codi.data.storage.TokenStorage
 
 class ApiException(val status: HttpStatusCode, val body: String?) : RuntimeException("API error ${status.value}: ${body}")
 
@@ -38,6 +39,13 @@ class ApiRouter(
 
         val httpResponse: HttpResponse = client.request(url) {
             this.method = method
+
+            // Agregar token de autorización si existe
+            val token = TokenStorage.getToken()
+            if (token != null) {
+                header("Authorization", "Bearer $token")
+            }
+
             // Query params
             if (queryParams.isNotEmpty()) {
                 url {
@@ -103,4 +111,18 @@ class ApiRouter(
             body = loginRequest
         )
     }
+
+    /**
+     * Obtiene el perfil del usuario, incluyendo datos básicos y estadísticas.
+     * @param userId El ID del usuario (UUID).
+     */
+    suspend fun getUserProfile(userId: String): ProfileResponse {
+        // La función genérica 'request' se encargará de obtener y deserializar el JSON.
+        return request<ProfileResponse>(
+            method = HttpMethod.Get,
+            path = "/perfil/{userId}",
+            routeParams = mapOf("userId" to userId) // Inserta el ID en la ruta
+        )
+    }
+
 }

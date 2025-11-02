@@ -1,4 +1,4 @@
-package org.codi.features.auth
+package org.codi.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -83,3 +83,4 @@ object HomeTabNavigator : Screen {
         )
     }
 }
+
