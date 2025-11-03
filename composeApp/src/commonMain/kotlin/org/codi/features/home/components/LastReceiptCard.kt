@@ -19,17 +19,21 @@ import org.codi.theme.CodiThemeValues
 fun LastReceiptCard(lastReceipt: LastReceipt) {
     // Formatear la fecha
     val date = try {
-        val parts = lastReceipt.fechaBoleta.split("T")[0].split("-")
-        if (parts.size == 3) {
-            val day = parts[2]
-            val month = getMonthName(parts[1].toInt())
-            val year = parts[0]
-            "$day $month $year"
+        if (lastReceipt.fechaBoleta.isNotEmpty()) {
+            val parts = lastReceipt.fechaBoleta.split("T")[0].split("-")
+            if (parts.size == 3) {
+                val day = parts[2]
+                val month = getMonthName(parts[1].toIntOrNull() ?: 1)
+                val year = parts[0]
+                "$day $month $year"
+            } else {
+                lastReceipt.fechaBoleta.split("T").firstOrNull() ?: "Fecha no disponible"
+            }
         } else {
-            lastReceipt.fechaBoleta.split("T")[0]
+            "Fecha no disponible"
         }
     } catch (_: Exception) {
-        lastReceipt.fechaBoleta.split("T")[0]
+        "Fecha no disponible"
     }
 
     Card(

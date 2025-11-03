@@ -29,18 +29,22 @@ fun RecentPurchaseCard(purchase: RecentPurchase) {
 
     // Formatear la fecha - solo mostramos la fecha sin parsear por ahora
     val date = try {
-        // Formato esperado: "2024-01-15T14:30:00Z"
-        val parts = purchase.fechaBoleta.split("T")[0].split("-")
-        if (parts.size == 3) {
-            val day = parts[2]
-            val month = getMonthName(parts[1].toInt())
-            val year = parts[0]
-            "$day $month $year"
+        if (purchase.fechaBoleta.isNotEmpty()) {
+            // Formato esperado: "2024-01-15T14:30:00Z"
+            val parts = purchase.fechaBoleta.split("T")[0].split("-")
+            if (parts.size == 3) {
+                val day = parts[2]
+                val month = getMonthName(parts[1].toIntOrNull() ?: 1)
+                val year = parts[0]
+                "$day $month $year"
+            } else {
+                purchase.fechaBoleta.split("T").firstOrNull() ?: "Fecha no disponible"
+            }
         } else {
-            purchase.fechaBoleta.split("T")[0]
+            "Fecha no disponible"
         }
     } catch (_: Exception) {
-        purchase.fechaBoleta.split("T")[0] // Mostrar solo la fecha
+        "Fecha no disponible"
     }
 
     // Determinar el color del badge según el tipo de boleta
