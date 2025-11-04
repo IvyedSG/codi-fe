@@ -163,4 +163,26 @@ class ApiRouter(
         )
     }
 
+    /**
+     * Obtiene todas las promociones disponibles.
+     */
+    suspend fun getPromociones(): PromosResponse {
+        return request<PromosResponse>(
+            method = HttpMethod.Get,
+            path = "/promociones"
+        )
+    }
+
+    /**
+     * Canjea una promoción.
+     * @param request Los datos del canje (userId, promocionId, descripcion).
+     */
+    suspend fun canjearPromocion(request: CanjearPromoRequest): CanjearPromoResponse {
+        return request<CanjearPromoResponse>(
+            method = HttpMethod.Post,
+            path = "/promociones/canjear",
+            body = request
+        )
+    }
+
 }
