@@ -26,6 +26,7 @@ import org.jetbrains.compose.resources.painterResource
 import codi.composeapp.generated.resources.Res
 import codi.composeapp.generated.resources.logo
 import org.codi.theme.CodiThemeValues
+import org.codi.ui.HomeTabNavigator
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -259,6 +260,10 @@ object RegisterScreen : Screen {
                                         resp.data.token.takeIf { it.isNotBlank() }?.let { token ->
                                             try {
                                                 TokenStorage.saveToken(token)
+                                                // Guardar también el userId
+                                                resp.data.user.id.takeIf { it.isNotBlank() }?.let { userId ->
+                                                    TokenStorage.saveUserId(userId)
+                                                }
                                             } catch (_: Throwable) {
                                                 // No bloquear navegación por fallo al guardar
                                             }

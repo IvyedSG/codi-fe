@@ -44,6 +44,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.shadow
 import codi.composeapp.generated.resources.google
 import androidx.compose.foundation.layout.BoxWithConstraints
+import org.codi.ui.HomeTabNavigator
 
 @Composable
 private fun GoogleSignInButton(
@@ -88,6 +89,7 @@ object LoginScreen : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        // Usamos BoxWithConstraints para obtener la altura disponible en commonMain y ajustar el layout en pantallas compactas.
 
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }

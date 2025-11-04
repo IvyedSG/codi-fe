@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
+    <!-- Por defecto no permitir cleartext -->
+    <base-config cleartextTrafficPermitted="false" />
+
+    <!-- Permitir cleartext específicamente para las direcciones del entorno de desarrollo -->
     <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">192.168.1.33</domain>
         <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
     </domain-config>
+
+    <!-- Cuando la app sea debuggable (build tipo debug), permitir cleartext globalmente para facilitar testing -->
+    <debug-overrides>
+        <base-config cleartextTrafficPermitted="true" />
+    </debug-overrides>
 </network-security-config>

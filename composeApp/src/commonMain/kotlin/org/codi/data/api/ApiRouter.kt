@@ -112,4 +112,55 @@ class ApiRouter(
             body = googleRequest
         )
     }
+    /**
+     * Obtiene el perfil del usuario, incluyendo datos básicos y estadísticas.
+     * @param userId El ID del usuario (UUID).
+     */
+    suspend fun getUserProfile(userId: String): ProfileResponse {
+        // La función genérica 'request' se encargará de obtener y deserializar el JSON.
+        return request<ProfileResponse>(
+            method = HttpMethod.Get,
+            path = "/perfil/{userId}",
+            routeParams = mapOf("userId" to userId) // Inserta el ID en la ruta
+        )
+    }
+
+    /**
+     * Actualiza el perfil del usuario (nombre y apellido).
+     * @param userId El ID del usuario (UUID).
+     * @param updateRequest Los nuevos datos del perfil.
+     */
+    suspend fun updateUserProfile(userId: String, updateRequest: ProfileUpdateRequest): ProfileUpdateResponse {
+        return request<ProfileUpdateResponse>(
+            method = HttpMethod.Put,
+            path = "/perfil/{userId}",
+            routeParams = mapOf("userId" to userId),
+            body = updateRequest
+        )
+    }
+
+    /**
+     * Obtiene el historial de compras del usuario.
+     * @param userId El ID del usuario (UUID).
+     */
+    suspend fun getUserHistory(userId: String): HistoryResponse {
+        return request<HistoryResponse>(
+            method = HttpMethod.Get,
+            path = "/historial/{userId}",
+            routeParams = mapOf("userId" to userId)
+        )
+    }
+
+    /**
+     * Obtiene los datos de inicio del usuario.
+     * @param userId El ID del usuario (UUID).
+     */
+    suspend fun getHomeData(userId: String): HomeResponse {
+        return request<HomeResponse>(
+            method = HttpMethod.Get,
+            path = "/inicio/{userId}",
+            routeParams = mapOf("userId" to userId)
+        )
+    }
+
 }

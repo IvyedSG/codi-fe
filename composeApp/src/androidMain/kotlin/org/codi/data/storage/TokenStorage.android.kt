@@ -8,6 +8,7 @@ import org.codi.AppContextHolder
 
 private const val PREFS_NAME = "codi_prefs"
 private const val KEY_TOKEN = "auth_token"
+private const val KEY_USER_ID = "user_id"
 
 actual object TokenStorage {
     private val prefs: SharedPreferences by lazy {
@@ -22,8 +23,16 @@ actual object TokenStorage {
         prefs.getString(KEY_TOKEN, null)
     }
 
+    actual suspend fun saveUserId(userId: String) = withContext(Dispatchers.IO) {
+        prefs.edit().putString(KEY_USER_ID, userId).apply()
+    }
+
+    actual suspend fun getUserId(): String? = withContext(Dispatchers.IO) {
+        prefs.getString(KEY_USER_ID, null)
+    }
+
     actual suspend fun clear() = withContext(Dispatchers.IO) {
-        prefs.edit().remove(KEY_TOKEN).apply()
+        prefs.edit().remove(KEY_TOKEN).remove(KEY_USER_ID).apply()
     }
 }
 

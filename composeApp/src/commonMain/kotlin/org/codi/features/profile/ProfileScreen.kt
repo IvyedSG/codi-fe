@@ -1,4 +1,4 @@
-package org.codi.features.home
+package org.codi.features.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -7,17 +7,23 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import org.codi.common.components.TopBar
-import org.codi.features.home.components.HomeContent
+import org.codi.features.auth.LoginScreen
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.PrimaryGreen
+import org.codi.features.profile.components.ProfileContent
+import org.codi.features.profile.components.EditProfileDialog
 
 @Composable
-fun HomeScreen() {
-    val viewModel = remember { HomeViewModel() }
+fun ProfileScreen() {
+    val viewModel = remember { ProfileViewModel() }
+    // Acceder al Navigator principal (fuera del TabNavigator)
+    val navigator = LocalNavigator.currentOrThrow.parent ?: LocalNavigator.currentOrThrow
 
     LaunchedEffect(Unit) {
-        viewModel.loadHomeData()
+        viewModel.loadProfile()
     }
 
     Column(
@@ -25,19 +31,30 @@ fun HomeScreen() {
             .fillMaxSize()
             .background(CodiThemeValues.colorScheme.background)
     ) {
-        TopBar(title = "Bienvenido a Codi")
+        TopBar(title = "Perfil")
 
         when (val currentState = viewModel.state) {
-            is HomeState.Loading -> LoadingState()
-            is HomeState.Error -> ErrorState(
+            is ProfileState.Loading -> LoadingState()
+            is ProfileState.Error -> ErrorState(
                 message = currentState.message,
-                onRetry = { viewModel.loadHomeData() }
+                onRetry = { viewModel.loadProfile() }
             )
-            is HomeState.Success -> {
-                HomeContent(homeData = currentState.home)
+            is ProfileState.Success -> {
+                ProfileContent(
+                    profileData = currentState.profile,
+                    viewModel = viewModel,
+                    onLogout = {
+                        viewModel.logout()
+                        // Reemplazar con LoginScreen en el Navigator principal
+                        navigator.replace(LoginScreen)
+                    }
+                )
             }
         }
     }
+
+    // Diálogo de edición de perfil
+    EditProfileDialog(viewModel = viewModel)
 }
 
 @Composable
