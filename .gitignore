@@ -17,3 +17,11 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+
+# Keystores privados (NO SUBIR)
+codi-release-keystore.jks
+release.keystore
+
+# EXCEPCIÓN: debug.keystore compartido SÍ se sube al repo
+!debug.keystore
+
