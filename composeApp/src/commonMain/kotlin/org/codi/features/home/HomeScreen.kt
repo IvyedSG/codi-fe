@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.codi.common.components.TopBar
+import org.codi.features.home.components.EmptyStateGuide
 import org.codi.features.home.components.HomeContent
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.PrimaryGreen
@@ -34,7 +35,12 @@ fun HomeScreen() {
                 onRetry = { viewModel.loadHomeData() }
             )
             is HomeState.Success -> {
-                HomeContent(homeData = currentState.home)
+                // Mostrar EmptyState si el usuario no tiene recibos
+                if (currentState.isEmpty) {
+                    EmptyStateGuide()
+                } else {
+                    HomeContent(homeData = currentState.home)
+                }
             }
         }
     }

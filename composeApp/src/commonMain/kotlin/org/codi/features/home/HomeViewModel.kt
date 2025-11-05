@@ -13,7 +13,10 @@ import org.codi.data.storage.home.HomeRepository
 
 sealed class HomeState {
     object Loading : HomeState()
-    data class Success(val home: HomeResponse) : HomeState()
+    data class Success(
+        val home: HomeResponse,
+        val isEmpty: Boolean = false
+    ) : HomeState()
     data class Error(val message: String) : HomeState()
 }
 
@@ -36,7 +39,15 @@ class HomeViewModel {
                 val response = ApiClient.router.getHomeData(userId)
 
                 if (response.success && response.data != null) {
-                    state = HomeState.Success(response)
+                    // Verificar si el usuario no tiene recibos
+                    val isEmpty = response.data.puntosVerdes == 0 &&
+                                  response.data.ultimaBoleta == null &&
+                                  response.data.co2Acumulado == 0.0
+
+                    state = HomeState.Success(
+                        home = response,
+                        isEmpty = isEmpty
+                    )
                 } else {
                     state = HomeState.Error(response.error ?: response.message.takeIf { it.isNotBlank() } ?: "Error al cargar los datos de inicio")
                 }
