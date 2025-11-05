@@ -17,5 +17,13 @@ class HomeRepository(
 
         apiRouter.getHomeData(userId)
     }
+
+    /**
+     * Obtiene los datos de inicio de un usuario específico
+     * @param userId El ID del usuario (UUID).
+     */
+    suspend fun getHomeDataByUserId(userId: String): Result<HomeResponse> = runCatching {
+        apiRouter.getHomeData(userId)
+    }
 }
 

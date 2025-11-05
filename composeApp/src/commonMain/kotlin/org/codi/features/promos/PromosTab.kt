@@ -67,7 +67,7 @@ fun PromosScreen(viewModel: PromoViewModel) {
             org.codi.common.components.TopBar(
                 title = "Promociones",
                 showGreenReceipts = true,
-                greenReceiptsCount = state.puntosUsuario
+                greenReceiptsCount = state.puntosVerdes
             )
 
             // TabRow para cambiar entre Disponibles y Mis Canjes
@@ -225,7 +225,7 @@ private fun PromocionesDisponiblesContent(
         items(state.promocionesDisponibles) { promocion ->
             PromocionItem(
                 promocion = promocion,
-                puntosUsuario = state.puntosUsuario,
+                puntosUsuario = state.puntosVerdes,
                 onCanjear = { promocionId ->
                     viewModel.canjearPromocion(
                         promocionId = promocionId,

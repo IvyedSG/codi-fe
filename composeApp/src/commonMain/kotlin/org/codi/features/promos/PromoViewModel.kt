@@ -11,17 +11,19 @@ import org.codi.data.api.ApiClient
 import org.codi.data.api.models.Promocion
 import org.codi.data.storage.TokenStorage
 import org.codi.data.storage.promo.PromoRepository
+import org.codi.data.storage.home.HomeRepository
 
 data class PromoState(
     val isLoading: Boolean = false,
     val error: String? = null,
-    val puntosUsuario: Int = 0,
+    val puntosVerdes: Int = 0, // Puntos verdes desde /inicio/{userId}
     val promocionesDisponibles: List<Promocion> = emptyList(),
     val promocionesCanjeadas: List<Promocion> = emptyList()
 )
 
 class PromoViewModel {
-    private val repository = PromoRepository(ApiClient.router)
+    private val promoRepository = PromoRepository(ApiClient.router)
+    private val homeRepository = HomeRepository(ApiClient.router)
 
     var state by mutableStateOf(PromoState())
         private set
@@ -31,7 +33,36 @@ class PromoViewModel {
         private set
 
     init {
+        loadPuntosVerdes() // Cargar puntos verdes al inicio
         loadPromociones()
+    }
+
+    /**
+     * Carga los puntos verdes desde el endpoint /inicio/{userId}
+     */
+    private fun loadPuntosVerdes() {
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
+                val userId = TokenStorage.getUserId()
+                if (userId.isNullOrBlank()) {
+                    return@launch
+                }
+
+                homeRepository.getHomeDataByUserId(userId)
+                    .onSuccess { response ->
+                        if (response.success && response.data != null) {
+                            state = state.copy(
+                                puntosVerdes = response.data.puntosVerdes
+                            )
+                        }
+                    }
+                    .onFailure {
+                        // No mostrar error, simplemente mantener puntos en 0
+                    }
+            } catch (_: Exception) {
+                // No mostrar error, simplemente mantener puntos en 0
+            }
+        }
     }
 
     /**
@@ -61,19 +92,17 @@ class PromoViewModel {
         state = state.copy(isLoading = true, error = null)
 
         CoroutineScope(Dispatchers.Default).launch {
-            repository.getPromociones()
+            promoRepository.getPromociones()
                 .onSuccess { response ->
                     if (response.success && response.data != null) {
                         state = state.copy(
                             isLoading = false,
-                            puntosUsuario = response.data.puntosUsuario,
                             promocionesDisponibles = response.data.promociones
                         )
                     } else {
                         state = state.copy(
                             isLoading = false,
                             error = response.error ?: response.message.takeIf { it.isNotBlank() } ?: "No se pudieron cargar las promociones",
-                            puntosUsuario = 0,
                             promocionesDisponibles = emptyList()
                         )
                     }
@@ -82,7 +111,6 @@ class PromoViewModel {
                     state = state.copy(
                         isLoading = false,
                         error = error.message ?: "Error al cargar promociones",
-                        puntosUsuario = 0,
                         promocionesDisponibles = emptyList()
                     )
                 }
@@ -107,12 +135,11 @@ class PromoViewModel {
                     return@launch
                 }
 
-                repository.getPromocionesUsuario(userId)
+                promoRepository.getPromocionesUsuario(userId)
                     .onSuccess { response ->
                         if (response.success && response.data != null) {
                             state = state.copy(
                                 isLoading = false,
-                                puntosUsuario = response.data.puntosUsuario,
                                 promocionesCanjeadas = response.data.promociones
                             )
                         } else {
@@ -147,15 +174,16 @@ class PromoViewModel {
         state = state.copy(isLoading = true, error = null)
 
         CoroutineScope(Dispatchers.Default).launch {
-            repository.canjearPromocion(promocionId, descripcion)
+            promoRepository.canjearPromocion(promocionId, descripcion)
                 .onSuccess { response ->
                     if (response.success) {
                         state = state.copy(
                             isLoading = false,
                             error = null
                         )
-                        // Recargar promociones disponibles
+                        // Recargar promociones disponibles y puntos verdes
                         loadPromocionesDisponibles()
+                        loadPuntosVerdes()
                     } else {
                         state = state.copy(
                             isLoading = false,
