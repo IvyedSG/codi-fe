@@ -53,7 +53,7 @@ class ProfileViewModel {
                 if (response.success && response.data != null) {
                     state = ProfileState.Success(response)
                 } else {
-                    state = ProfileState.Error(response.error ?: "Error al cargar el perfil")
+                    state = ProfileState.Error(response.error ?: response.message.takeIf { it.isNotBlank() } ?: "Error al cargar el perfil")
                 }
             } catch (e: Exception) {
                 state = ProfileState.Error(e.message ?: "Error desconocido")

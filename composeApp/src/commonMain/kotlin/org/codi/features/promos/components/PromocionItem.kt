@@ -67,7 +67,7 @@ fun PromocionItem(
                     }
 
                     Text(
-                        text = promocion.tienda.nombre,
+                        text = promocion.tienda?.nombre ?: "Tienda",
                         style = CodiThemeValues.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         color = CodiThemeValues.colorScheme.onBackground
                     )
@@ -99,13 +99,14 @@ fun PromocionItem(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Descripción
-            Text(
-                text = promocion.descripcion,
-                style = CodiThemeValues.typography.bodyMedium,
-                color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.7f)
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
+            promocion.descripcion?.let { desc ->
+                Text(
+                    text = desc,
+                    style = CodiThemeValues.typography.bodyMedium,
+                    color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
 
             // Requisitos y botón
             Row(
@@ -119,18 +120,26 @@ fun PromocionItem(
                         style = CodiThemeValues.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                         color = if (canCanjear) SecondaryGreen else Color.Gray
                     )
-                    if (!canCanjear) {
+                    if (!canCanjear && promocion.disponible != false) {
                         Text(
                             text = "Te faltan ${promocion.boletasRequeridas - puntosUsuario} boletas",
                             style = CodiThemeValues.typography.bodySmall,
                             color = Color.Gray
                         )
                     }
+                    // Mostrar si ya fue canjeada
+                    if (promocion.disponible == false) {
+                        Text(
+                            text = "✓ Ya canjeaste esta promoción",
+                            style = CodiThemeValues.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                            color = Color(0xFF4CAF50)
+                        )
+                    }
                 }
 
                 Button(
                     onClick = { showDialog = true },
-                    enabled = canCanjear && promocion.activa,
+                    enabled = canCanjear && promocion.activa && promocion.disponible != false,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = SecondaryGreen,
                         contentColor = Color.White,
@@ -139,7 +148,7 @@ fun PromocionItem(
                     shape = RoundedCornerShape(20.dp)
                 ) {
                     Text(
-                        text = "Canjear",
+                        text = if (promocion.disponible == false) "Canjeada" else "Canjear",
                         style = CodiThemeValues.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                     )
                 }

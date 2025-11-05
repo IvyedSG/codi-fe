@@ -38,7 +38,7 @@ class HomeViewModel {
                 if (response.success && response.data != null) {
                     state = HomeState.Success(response)
                 } else {
-                    state = HomeState.Error(response.error ?: "Error al cargar los datos de inicio")
+                    state = HomeState.Error(response.error ?: response.message.takeIf { it.isNotBlank() } ?: "Error al cargar los datos de inicio")
                 }
             } catch (e: Exception) {
                 state = HomeState.Error(e.message ?: "Error desconocido")

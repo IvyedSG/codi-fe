@@ -38,7 +38,7 @@ class HistoryViewModel {
                 if (response.success && response.data != null) {
                     state = HistoryState.Success(response)
                 } else {
-                    state = HistoryState.Error(response.error ?: "Error al cargar el historial")
+                    state = HistoryState.Error(response.error ?: response.message.takeIf { it.isNotBlank() } ?: "Error al cargar el historial")
                 }
             } catch (e: Exception) {
                 state = HistoryState.Error(e.message ?: "Error desconocido")

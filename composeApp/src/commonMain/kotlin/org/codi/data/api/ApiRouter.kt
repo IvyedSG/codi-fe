@@ -174,6 +174,34 @@ class ApiRouter(
     }
 
     /**
+     * Obtiene las promociones de un usuario específico (promociones canjeadas).
+     * @param userId El ID del usuario (UUID).
+     */
+    suspend fun getPromocionesUsuario(userId: String): PromosResponse {
+        return request<PromosResponse>(
+            method = HttpMethod.Get,
+            path = "/promociones",
+            queryParams = mapOf("userId" to userId)
+        )
+    }
+
+    /**
+     * Obtiene el detalle de una promoción específica para un usuario.
+     * @param promocionId El ID de la promoción (UUID).
+     * @param userId El ID del usuario (UUID).
+     */
+    suspend fun getPromocionDetalle(promocionId: String, userId: String): PromocionDetalleResponse {
+        return request<PromocionDetalleResponse>(
+            method = HttpMethod.Get,
+            path = "/promociones/{promocionId}/usuario/{userId}",
+            routeParams = mapOf(
+                "promocionId" to promocionId,
+                "userId" to userId
+            )
+        )
+    }
+
+    /**
      * Canjea una promoción.
      * @param request Los datos del canje (userId, promocionId, descripcion).
      */

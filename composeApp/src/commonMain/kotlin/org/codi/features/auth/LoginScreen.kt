@@ -109,9 +109,16 @@ object LoginScreen : Screen {
                         val resp = ApiClient.router.googleSignIn(googleReq)
 
                         if (resp.success && resp.data != null) {
+                            // Guardar el token
                             resp.data.token.takeIf { it.isNotBlank() }?.let { token ->
                                 try {
                                     TokenStorage.saveToken(token)
+                                } catch (_: Throwable) {}
+                            }
+                            // Guardar el userId
+                            resp.data.user.id.takeIf { it.isNotBlank() }?.let { userId ->
+                                try {
+                                    TokenStorage.saveUserId(userId)
                                 } catch (_: Throwable) {}
                             }
                             navigator.replace(HomeTabNavigator)
@@ -268,9 +275,16 @@ object LoginScreen : Screen {
                                         val req = LoginRequest(email = email, password = password)
                                         val resp = ApiClient.router.login(req)
                                         if (resp.success && resp.data != null) {
+                                            // Guardar el token
                                             resp.data.token.takeIf { it.isNotBlank() }?.let { token ->
                                                 try {
                                                     TokenStorage.saveToken(token)
+                                                } catch (_: Throwable) {}
+                                            }
+                                            // Guardar el userId
+                                            resp.data.user.id.takeIf { it.isNotBlank() }?.let { userId ->
+                                                try {
+                                                    TokenStorage.saveUserId(userId)
                                                 } catch (_: Throwable) {}
                                             }
                                             navigator.replace(HomeTabNavigator)
