@@ -44,8 +44,7 @@ data class TiendaPromo(
 @Serializable
 data class CanjearPromoRequest(
     val userId: String,
-    val promocionId: String,
-    val descripcion: String
+    val promocionId: String
 )
 
 @Serializable

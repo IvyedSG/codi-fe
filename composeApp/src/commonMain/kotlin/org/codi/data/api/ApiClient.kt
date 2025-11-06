@@ -4,8 +4,12 @@ import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.request.HttpRequestPipeline
+import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import org.codi.data.storage.TokenStorage
 
 /**
  * Función expect que será implementada en cada plataforma
@@ -20,8 +24,8 @@ expect fun createHttpClient(): HttpClient
 object ApiClient {
 
     /**
-     * Cliente HTTP configurado con negociación de contenido JSON
-     * Usa el motor específico de cada plataforma y agrega logging/timeout.
+     * Cliente HTTP configurado con negociación de contenido JSON, logging, timeout
+     * y un interceptor de autenticación JWT que adjunta automáticamente el token Bearer.
      */
     private val httpClient = createHttpClient().config {
         install(ContentNegotiation) {
@@ -31,14 +35,39 @@ object ApiClient {
                 ignoreUnknownKeys = true
             })
         }
+
         install(Logging) {
             logger = Logger.SIMPLE
             level = LogLevel.INFO
         }
+
         install(HttpTimeout) {
             requestTimeoutMillis = 15000
             connectTimeoutMillis = 10000
             socketTimeoutMillis = 15000
+        }
+    }.also { client ->
+        // Interceptor de Autenticación JWT
+        // Este interceptor adjunta automáticamente el token Bearer a cada request
+        client.requestPipeline.intercept(HttpRequestPipeline.State) {
+            // Verificar si la ruta NO es de autenticación pública
+            val path = context.url.encodedPath
+            val isAuthEndpoint = path.contains("/auth/login") ||
+                               path.contains("/auth/register") ||
+                               path.contains("/auth/google")
+
+            // Si no es un endpoint de autenticación, adjuntar el token
+            if (!isAuthEndpoint) {
+                // Obtener el token de forma segura desde TokenStorage
+                val token = runBlocking {
+                    TokenStorage.getToken()
+                }
+
+                // Si existe el token, adjuntarlo al header Authorization
+                token?.let {
+                    context.headers.append(HttpHeaders.Authorization, "Bearer $it")
+                }
+            }
         }
     }
 

@@ -37,16 +37,14 @@ class PromoRepository(
     /**
      * Canjea una promoción.
      * @param promocionId El ID de la promoción a canjear.
-     * @param descripcion Descripción o mensaje del canje.
      */
-    suspend fun canjearPromocion(promocionId: String, descripcion: String): Result<CanjearPromoResponse> = runCatching {
+    suspend fun canjearPromocion(promocionId: String): Result<CanjearPromoResponse> = runCatching {
         val userId = TokenStorage.getUserId()
             ?: throw IllegalStateException("Usuario no autenticado")
 
         val request = CanjearPromoRequest(
             userId = userId,
-            promocionId = promocionId,
-            descripcion = descripcion
+            promocionId = promocionId
         )
 
         apiRouter.canjearPromocion(request)

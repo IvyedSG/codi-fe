@@ -19,8 +19,8 @@ import org.codi.features.profile.components.EditProfileDialog
 @Composable
 fun ProfileScreen() {
     val viewModel = remember { ProfileViewModel() }
-    // Acceder al Navigator principal (fuera del TabNavigator)
-    val navigator = LocalNavigator.currentOrThrow.parent ?: LocalNavigator.currentOrThrow
+    // Acceder al Navigator de la tab (para navegación dentro de Profile)
+    val navigator = LocalNavigator.currentOrThrow
 
     LaunchedEffect(Unit) {
         viewModel.loadProfile()
@@ -45,8 +45,13 @@ fun ProfileScreen() {
                     viewModel = viewModel,
                     onLogout = {
                         viewModel.logout()
-                        // Reemplazar con LoginScreen en el Navigator principal
-                        navigator.replace(LoginScreen)
+                        // Para el logout, necesitamos acceder al Navigator principal
+                        // Buscar el navigator raíz para volver al login
+                        var rootNavigator = navigator
+                        while (rootNavigator.parent != null) {
+                            rootNavigator = rootNavigator.parent!!
+                        }
+                        rootNavigator.replaceAll(LoginScreen)
                     }
                 )
             }

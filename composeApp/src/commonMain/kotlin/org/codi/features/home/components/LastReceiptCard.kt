@@ -68,12 +68,17 @@ fun LastReceiptCard(lastReceipt: LastReceipt) {
                         style = CodiThemeValues.typography.bodyLarge,
                         color = CodiThemeValues.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = lastReceipt.categoriaTienda,
-                        style = CodiThemeValues.typography.bodySmall,
-                        color = CodiThemeValues.colorScheme.primary.copy(alpha = 0.6f)
-                    )
+
+                    // Solo mostrar categoría si no es null
+                    lastReceipt.categoriaTienda?.let { categoria ->
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = categoria,
+                            style = CodiThemeValues.typography.bodySmall,
+                            color = CodiThemeValues.colorScheme.primary.copy(alpha = 0.6f)
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically

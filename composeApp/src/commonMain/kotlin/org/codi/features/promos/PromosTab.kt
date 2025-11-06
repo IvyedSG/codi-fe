@@ -227,10 +227,7 @@ private fun PromocionesDisponiblesContent(
                 promocion = promocion,
                 puntosUsuario = state.puntosVerdes,
                 onCanjear = { promocionId ->
-                    viewModel.canjearPromocion(
-                        promocionId = promocionId,
-                        descripcion = "Canje desde la aplicación"
-                    )
+                    viewModel.canjearPromocion(promocionId)
                 }
             )
         }

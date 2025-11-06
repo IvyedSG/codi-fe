@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class LastReceipt(
     val nombreTienda: String = "",
-    val categoriaTienda: String = "",
+    val categoriaTienda: String? = null, // Puede ser null
     val logoTienda: String? = null, // Puede ser null
     val co2Total: Double = 0.0,
     val fechaBoleta: String = "", // Formato ISO 8601

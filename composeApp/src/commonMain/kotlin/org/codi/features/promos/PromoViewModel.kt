@@ -170,11 +170,11 @@ class PromoViewModel {
     /**
      * Canjea una promoción
      */
-    fun canjearPromocion(promocionId: String, descripcion: String = "") {
+    fun canjearPromocion(promocionId: String) {
         state = state.copy(isLoading = true, error = null)
 
         CoroutineScope(Dispatchers.Default).launch {
-            promoRepository.canjearPromocion(promocionId, descripcion)
+            promoRepository.canjearPromocion(promocionId)
                 .onSuccess { response ->
                     if (response.success) {
                         state = state.copy(
