@@ -21,6 +21,7 @@ import org.codi.features.promos.components.RedeemedPromoItem
 import org.codi.features.promos.components.PromoDetailDialog
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.SecondaryGreen
+import org.codi.ui.ViewModelStore
 
 object PromosTab : Tab {
     override val options: TabOptions
@@ -39,7 +40,7 @@ object PromosTab : Tab {
 
     @Composable
     override fun Content() {
-        val viewModel = remember { PromoViewModel() }
+        val viewModel = ViewModelStore.getPromoViewModel()
         PromosScreen(viewModel)
     }
 }

@@ -12,10 +12,11 @@ import org.codi.features.home.components.EmptyStateGuide
 import org.codi.features.home.components.HomeContent
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.PrimaryGreen
+import org.codi.ui.ViewModelStore
 
 @Composable
 fun HomeScreen() {
-    val viewModel = remember { HomeViewModel() }
+    val viewModel = ViewModelStore.getHomeViewModel()
 
     LaunchedEffect(Unit) {
         viewModel.loadHomeData()

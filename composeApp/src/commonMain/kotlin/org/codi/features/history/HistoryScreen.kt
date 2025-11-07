@@ -11,10 +11,11 @@ import org.codi.common.components.TopBar
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.PrimaryGreen
 import org.codi.features.history.components.HistoryContent
+import org.codi.ui.ViewModelStore
 
 @Composable
 fun HistoryScreen() {
-    val viewModel = remember { HistoryViewModel() }
+    val viewModel = ViewModelStore.getHistoryViewModel()
 
     LaunchedEffect(Unit) {
         viewModel.loadHistory()

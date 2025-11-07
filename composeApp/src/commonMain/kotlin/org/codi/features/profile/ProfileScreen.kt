@@ -15,10 +15,11 @@ import org.codi.theme.CodiThemeValues
 import org.codi.theme.PrimaryGreen
 import org.codi.features.profile.components.ProfileContent
 import org.codi.features.profile.components.EditProfileDialog
+import org.codi.ui.ViewModelStore
 
 @Composable
 fun ProfileScreen() {
-    val viewModel = remember { ProfileViewModel() }
+    val viewModel = ViewModelStore.getProfileViewModel()
     // Acceder al Navigator de la tab (para navegación dentro de Profile)
     val navigator = LocalNavigator.currentOrThrow
 
@@ -45,6 +46,8 @@ fun ProfileScreen() {
                     viewModel = viewModel,
                     onLogout = {
                         viewModel.logout()
+                        // Limpiar todos los ViewModels al cerrar sesión
+                        ViewModelStore.clear()
                         // Para el logout, necesitamos acceder al Navigator principal
                         // Buscar el navigator raíz para volver al login
                         var rootNavigator = navigator

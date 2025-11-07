@@ -12,10 +12,15 @@ import org.codi.data.api.models.ProfileResponse
 import org.codi.data.api.models.ProfileUpdateRequest
 import org.codi.data.storage.TokenStorage
 import org.codi.data.storage.profile.ProfileRepository
+import org.codi.data.cache.CacheManager
+import org.codi.data.cache.CacheDuration
 
 sealed class ProfileState {
     object Loading : ProfileState()
-    data class Success(val profile: ProfileResponse) : ProfileState()
+    data class Success(
+        val profile: ProfileResponse,
+        val isRefreshing: Boolean = false
+    ) : ProfileState()
     data class Error(val message: String) : ProfileState()
 }
 
@@ -37,9 +42,15 @@ class ProfileViewModel {
         private set
 
     private val repository = ProfileRepository(ApiClient.router)
+    private val cache = CacheManager<ProfileResponse>()
 
-    fun loadProfile() {
-        state = ProfileState.Loading
+    /**
+     * Carga el perfil del usuario.
+     * Si hay datos en caché válidos, los muestra inmediatamente
+     * y actualiza en segundo plano.
+     * @param forceRefresh Fuerza la recarga ignorando el caché
+     */
+    fun loadProfile(forceRefresh: Boolean = false) {
         CoroutineScope(Dispatchers.Default).launch {
             try {
                 val userId = TokenStorage.getUserId()
@@ -48,15 +59,76 @@ class ProfileViewModel {
                     return@launch
                 }
 
+                // Si hay datos en caché válidos y no es un refresh forzado
+                val cachedData = cache.getIfValid(CacheDuration.FIVE_MINUTES)
+                if (cachedData != null && !forceRefresh) {
+                    // Mostrar datos en caché inmediatamente
+                    state = ProfileState.Success(
+                        profile = cachedData,
+                        isRefreshing = false
+                    )
+
+                    // Actualizar en segundo plano si los datos tienen más de 1 minuto
+                    if (!cache.isValid(CacheDuration.ONE_MINUTE)) {
+                        refreshInBackground(userId)
+                    }
+                    return@launch
+                }
+
+                // Si no hay caché o es refresh forzado, mostrar loading
+                if (state !is ProfileState.Success) {
+                    state = ProfileState.Loading
+                } else {
+                    // Si ya hay datos mostrados, solo indicar que está refrescando
+                    val currentState = state as ProfileState.Success
+                    state = currentState.copy(isRefreshing = true)
+                }
+
+                // Cargar datos frescos
                 val response = ApiClient.router.getUserProfile(userId)
 
                 if (response.success && response.data != null) {
-                    state = ProfileState.Success(response)
+                    // Guardar en caché
+                    cache.set(response)
+
+                    state = ProfileState.Success(
+                        profile = response,
+                        isRefreshing = false
+                    )
                 } else {
                     state = ProfileState.Error(response.error ?: response.message.takeIf { it.isNotBlank() } ?: "Error al cargar el perfil")
                 }
             } catch (e: Exception) {
-                state = ProfileState.Error(e.message ?: "Error desconocido")
+                // Si hay datos en caché, mostrarlos aunque haya error
+                val cachedData = cache.get()
+                if (cachedData != null) {
+                    state = ProfileState.Success(
+                        profile = cachedData,
+                        isRefreshing = false
+                    )
+                } else {
+                    state = ProfileState.Error(e.message ?: "Error desconocido")
+                }
+            }
+        }
+    }
+
+    /**
+     * Actualiza los datos en segundo plano sin mostrar loading
+     */
+    private fun refreshInBackground(userId: String) {
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
+                val response = ApiClient.router.getUserProfile(userId)
+                if (response.success && response.data != null) {
+                    cache.set(response)
+                    state = ProfileState.Success(
+                        profile = response,
+                        isRefreshing = false
+                    )
+                }
+            } catch (e: Exception) {
+                // Silenciosamente ignorar errores en refresh de fondo
             }
         }
     }
@@ -135,6 +207,8 @@ class ProfileViewModel {
                             )
 
                             state = ProfileState.Success(updatedProfile)
+                            // Actualizar caché con nuevos datos
+                            cache.set(updatedProfile)
                         }
                         closeEditDialog()
                     } else {
@@ -159,9 +233,19 @@ class ProfileViewModel {
         CoroutineScope(Dispatchers.Default).launch {
             try {
                 TokenStorage.clear()
+                cache.clear()
             } catch (_: Exception) {
                 // Ignorar errores al limpiar
             }
+        }
+    }
+
+    /**
+     * Limpia el caché
+     */
+    fun clearCache() {
+        CoroutineScope(Dispatchers.Default).launch {
+            cache.clear()
         }
     }
 }
