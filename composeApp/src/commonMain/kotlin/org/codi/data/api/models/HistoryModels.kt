@@ -20,6 +20,7 @@ data class ActivitySummary(
 // 2. Modelo para una compra reciente
 @Serializable
 data class RecentPurchase(
+    val id: String, // ID de la boleta para navegar al detalle
     val fechaBoleta: String = "", // Formato ISO 8601
     val logoTienda: String? = null, // Puede ser null
     val nombreTienda: String = "",

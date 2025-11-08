@@ -19,9 +19,11 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.codi.data.api.models.RecentPurchase
+import org.codi.data.models.BoletaTipoAmbiental
 import org.codi.features.receipt.ReceiptDetailScreen
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.PrimaryGreen
+import org.codi.utils.TipoAmbientalUtils
 
 @Composable
 fun RecentPurchaseCard(purchase: RecentPurchase) {
@@ -47,13 +49,9 @@ fun RecentPurchaseCard(purchase: RecentPurchase) {
         "Fecha no disponible"
     }
 
-    // Determinar el color del badge según el tipo de boleta
-    val badgeColor = when (purchase.tipoBoleta.uppercase()) {
-        "VERDE" -> PrimaryGreen
-        "AMARILLA" -> Color(0xFFFF9800)
-        "ROJA" -> Color(0xFFF44336)
-        else -> Color.Gray
-    }
+    // Convertir el tipo de boleta a enum y obtener el color
+    val tipoAmbiental = BoletaTipoAmbiental.fromString(purchase.tipoBoleta)
+    val badgeColor = TipoAmbientalUtils.getColor(tipoAmbiental)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -127,7 +125,7 @@ fun RecentPurchaseCard(purchase: RecentPurchase) {
                             modifier = Modifier.size(12.dp)
                         )
                         Text(
-                            text = purchase.tipoBoleta.uppercase(),
+                            text = TipoAmbientalUtils.getDisplayName(tipoAmbiental),
                             style = CodiThemeValues.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = Color.White
                         )
@@ -150,7 +148,7 @@ fun RecentPurchaseCard(purchase: RecentPurchase) {
 
                 PurchaseStatItem(
                     icon = Icons.Default.Eco,
-                    value = purchase.tipoBoleta,
+                    value = TipoAmbientalUtils.getDisplayName(tipoAmbiental),
                     label = "Calificación"
                 )
 
@@ -166,9 +164,8 @@ fun RecentPurchaseCard(purchase: RecentPurchase) {
             // Botón Ver detalles
             OutlinedButton(
                 onClick = {
-                    // Por ahora usamos un ID temporal, idealmente el endpoint debería devolver el ID de la boleta
                     navigator.push(ReceiptDetailScreen(
-                        receiptId = "1",
+                        receiptId = purchase.id,
                         storeName = purchase.nombreTienda,
                         fromUpload = false
                     ))

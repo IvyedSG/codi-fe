@@ -21,6 +21,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.PrimaryGreen
 import org.codi.theme.SecondaryGreen
+import org.codi.utils.formatDecimal
 
 data class ReceiptDetailScreen(
     val receiptId: String,
@@ -31,97 +32,189 @@ data class ReceiptDetailScreen(
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val viewModel = remember { ReceiptViewModel() }
+        val state = viewModel.state
         var showRecommendations by remember { mutableStateOf(false) }
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(CodiThemeValues.colorScheme.background)
-        ) {
-            // TopBar fijo
-            org.codi.common.components.TopBar(
-                title = "Detalle de Recibo"
-            )
+        // Cargar datos al iniciar
+        LaunchedEffect(receiptId) {
+            viewModel.loadReceiptDetail(receiptId)
+        }
 
-            // Contenido scrollable
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp)
-            ) {
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Card del recibo
-                ReceiptCard(storeName = storeName)
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Botón ver/ocultar recomendaciones
-                Button(
-                    onClick = { showRecommendations = !showRecommendations },
+        when (state) {
+            is ReceiptState.Loading -> {
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = SecondaryGreen,
-                        contentColor = Color.White
-                    ),
-                    shape = CodiThemeValues.shapes.medium
+                        .fillMaxSize()
+                        .background(CodiThemeValues.colorScheme.background),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Eco,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (showRecommendations) "Ocultar recomendaciones" else "Ver recomendaciones eco",
-                        style = CodiThemeValues.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
+                    CircularProgressIndicator(
+                        color = PrimaryGreen
                     )
                 }
+            }
+            is ReceiptState.DetailSuccess -> {
+                val boleta = state.response.data
+                if (boleta != null) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(CodiThemeValues.colorScheme.background)
+                    ) {
+                        // TopBar fijo
+                        org.codi.common.components.TopBar(
+                            title = "Detalle de Recibo"
+                        )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                        // Contenido scrollable
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 20.dp)
+                        ) {
+                            Spacer(modifier = Modifier.height(16.dp))
 
-                // Mostrar recomendaciones si está activo
-                if (showRecommendations) {
-                    RecommendationsSection()
-                    Spacer(modifier = Modifier.height(16.dp))
+                            // Card del recibo con datos reales
+                            ReceiptCard(boleta = boleta)
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Botón ver/ocultar recomendaciones
+                            Button(
+                                onClick = { showRecommendations = !showRecommendations },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = SecondaryGreen,
+                                    contentColor = Color.White
+                                ),
+                                shape = CodiThemeValues.shapes.medium
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Eco,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (showRecommendations) "Ocultar recomendaciones" else "Ver recomendaciones eco",
+                                    style = CodiThemeValues.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Mostrar recomendaciones si está activo
+                            if (showRecommendations) {
+                                RecommendationsSection()
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+
+                            // Botón Volver
+                            Button(
+                                onClick = { navigator.pop() },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = CodiThemeValues.colorScheme.tertiary,
+                                    contentColor = CodiThemeValues.colorScheme.onTertiary
+                                ),
+                                shape = CodiThemeValues.shapes.medium
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowBack,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Volver",
+                                    style = CodiThemeValues.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                                    color = LocalContentColor.current
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(20.dp))
+                        }
+                    }
                 }
-
-                // Botón Volver
-                Button(
-                    onClick = { navigator.pop() },
+            }
+            is ReceiptState.Error -> {
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = CodiThemeValues.colorScheme.tertiary,
-                        contentColor = CodiThemeValues.colorScheme.onTertiary
-                    ),
-                    shape = CodiThemeValues.shapes.medium
+                        .fillMaxSize()
+                        .background(CodiThemeValues.colorScheme.background)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                    org.codi.common.components.TopBar(
+                        title = "Error"
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Volver",
-                        style = CodiThemeValues.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                        color = LocalContentColor.current
-                    )
-                }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Error,
+                            contentDescription = null,
+                            tint = Color(0xFFE53935),
+                            modifier = Modifier.size(80.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Text(
+                            text = "Error al cargar",
+                            style = CodiThemeValues.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            color = CodiThemeValues.colorScheme.onBackground
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = state.message,
+                            style = CodiThemeValues.typography.bodyMedium,
+                            color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.7f),
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        Button(
+                            onClick = { navigator.pop() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = CodiThemeValues.colorScheme.tertiary,
+                                contentColor = CodiThemeValues.colorScheme.onTertiary
+                            ),
+                            shape = RoundedCornerShape(28.dp)
+                        ) {
+                            Text(
+                                text = "Volver",
+                                style = CodiThemeValues.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                                color = LocalContentColor.current
+                            )
+                        }
+                    }
+                }
+            }
+            else -> {
+                // Idle o estados no esperados
             }
         }
     }
 }
 
 @Composable
-fun ReceiptCard(storeName: String = "TOTTUS") {
+fun ReceiptCard(boleta: org.codi.data.api.models.BoletaDetalle) {
     Surface(
         color = Color.White,
         shape = RoundedCornerShape(16.dp),
@@ -133,33 +226,11 @@ fun ReceiptCard(storeName: String = "TOTTUS") {
         ) {
             // Nombre del comercio
             Text(
-                text = storeName,
+                text = boleta.nombreTienda.uppercase(),
                 style = CodiThemeValues.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Black
                 ),
                 color = CodiThemeValues.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Dirección
-            Text(
-                text = "AV. JAVIER PRADO ESTE 123, SAN BORJA",
-                style = CodiThemeValues.typography.labelSmall,
-                color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.6f),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            // RUC
-            Text(
-                text = "RUC: 20123456789",
-                style = CodiThemeValues.typography.labelSmall,
-                color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -175,22 +246,11 @@ fun ReceiptCard(storeName: String = "TOTTUS") {
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(3.dp))
-
-            // Número de boleta
-            Text(
-                text = "B007 00123456",
-                style = CodiThemeValues.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = CodiThemeValues.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Fecha y hora
+            // Fecha
             Text(
-                text = "Fecha: 22/05/2025  Hora: 15:30",
+                text = "Fecha: ${boleta.fechaBoleta}",
                 style = CodiThemeValues.typography.labelSmall,
                 color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center,
@@ -241,57 +301,24 @@ fun ReceiptCard(storeName: String = "TOTTUS") {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Items del recibo
-            ReceiptItem("MANZANA NACIONAL", "0.750", "S/ 5.93", "0.3 Kg", isEco = true)
-            ReceiptItem("PLÁTANO ORGÁNICO", "1.000", "S/ 5.50", "0.2 Kg", isEco = true)
-            ReceiptItem("LECHE DESLAC X 1L", "2", "S/ 11.8", "1.8 Kg", isEco = false, isHighImpact = true)
-            ReceiptItem("PAN INTEGRAL", "1", "S/ 8.9", "0.5 Kg", isEco = true)
-            ReceiptItem("HAMBURGUESA CARNE", "1", "S/ 15.9", "2.1 Kg", isEco = false, isHighImpact = true)
-            ReceiptItem("PAPEL TOALLA ECO", "1", "S/ 12.5", "0.6 Kg", isEco = true)
-            ReceiptItem("DETERGENTE REGULAR", "1", "S/ 18.9", "1.1 Kg", isEco = false)
+            // Items del recibo (datos reales)
+            boleta.productos.forEach { producto ->
+                ReceiptItem(
+                    description = producto.nombre,
+                    quantity = producto.cantidad.formatDecimal(),
+                    price = "S/ ${producto.precioTotal.formatDecimal()}",
+                    co2 = "${producto.factorCo2.formatDecimal()} Kg",
+                    isEco = producto.esLocal == true || producto.tieneEmpaqueEcologico == true,
+                    isHighImpact = producto.factorCo2 > 2.0
+                )
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider(color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.2f))
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Totales
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "SUBTOTAL:",
-                    style = CodiThemeValues.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = CodiThemeValues.colorScheme.onBackground
-                )
-                Text(
-                    text = "S/ 98.40",
-                    style = CodiThemeValues.typography.bodyMedium,
-                    color = CodiThemeValues.colorScheme.onBackground
-                )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "IGV (18%):",
-                    style = CodiThemeValues.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = CodiThemeValues.colorScheme.onBackground
-                )
-                Text(
-                    text = "S/ 21.60",
-                    style = CodiThemeValues.typography.bodyMedium,
-                    color = CodiThemeValues.colorScheme.onBackground
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
+            // Total
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -302,7 +329,7 @@ fun ReceiptCard(storeName: String = "TOTTUS") {
                     color = CodiThemeValues.colorScheme.onBackground
                 )
                 Text(
-                    text = "S/ 120.00",
+                    text = "S/ ${boleta.total.formatDecimal()}",
                     style = CodiThemeValues.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = CodiThemeValues.colorScheme.onBackground
                 )
@@ -323,7 +350,7 @@ fun ReceiptCard(storeName: String = "TOTTUS") {
                     color = CodiThemeValues.colorScheme.onBackground
                 )
                 Text(
-                    text = "6.0 Kg",
+                    text = "${boleta.analisis.co2Total.formatDecimal()} Kg",
                     style = CodiThemeValues.typography.titleMedium,
                     color = PrimaryGreen
                 )
@@ -334,9 +361,11 @@ fun ReceiptCard(storeName: String = "TOTTUS") {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Método de pago
+            // Resumen de productos eco-amigables
+            val productosEco = boleta.productos.count { it.esLocal == true || it.tieneEmpaqueEcologico == true }
+            val totalProductos = boleta.productos.size
             Text(
-                text = "VISA ****3456",
+                text = "$productosEco Productos Eco-amigables de $totalProductos",
                 style = CodiThemeValues.typography.bodySmall,
                 color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
@@ -345,14 +374,17 @@ fun ReceiptCard(storeName: String = "TOTTUS") {
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Productos eco-amigables
-            Text(
-                text = "4 Productos Eco-amigables de 7",
-                style = CodiThemeValues.typography.bodySmall,
-                color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Tipo ambiental
+            boleta.tipoAmbiental?.let { tipo ->
+                val tipoAmbiental = org.codi.data.models.BoletaTipoAmbiental.fromString(tipo)
+                Text(
+                    text = "Recibo: ${org.codi.utils.TipoAmbientalUtils.getDisplayName(tipoAmbiental)}",
+                    style = CodiThemeValues.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                    color = org.codi.utils.TipoAmbientalUtils.getColor(tipoAmbiental),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }

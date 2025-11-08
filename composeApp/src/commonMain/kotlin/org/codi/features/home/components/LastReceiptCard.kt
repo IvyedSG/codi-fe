@@ -12,11 +12,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import org.codi.data.api.models.LastReceipt
+import org.codi.features.receipt.ReceiptDetailScreen
 import org.codi.theme.CodiThemeValues
 
 @Composable
 fun LastReceiptCard(lastReceipt: LastReceipt) {
+    val navigator = LocalNavigator.currentOrThrow
     // Formatear la fecha
     val date = try {
         if (lastReceipt.fechaBoleta.isNotEmpty()) {
@@ -149,13 +153,23 @@ fun LastReceiptCard(lastReceipt: LastReceipt) {
                 }
 
                 Button(
-                    onClick = { /* Ver detalles */ },
+                    onClick = {
+                        // Navegar al detalle solo si existe el ID
+                        lastReceipt.id?.let { boletaId ->
+                            navigator.push(ReceiptDetailScreen(
+                                receiptId = boletaId,
+                                storeName = lastReceipt.nombreTienda,
+                                fromUpload = false
+                            ))
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = CodiThemeValues.colorScheme.tertiary,
                         contentColor = CodiThemeValues.colorScheme.onTertiary
                     ),
                     shape = CodiThemeValues.shapes.medium,
-                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+                    enabled = lastReceipt.id != null // Deshabilitar si no hay ID
                 ) {
                     Text(
                         text = "Ver detalles",

@@ -42,9 +42,9 @@ object ApiClient {
         }
 
         install(HttpTimeout) {
-            requestTimeoutMillis = 15000
+            requestTimeoutMillis = 30000  // 30 segundos para requests normales
             connectTimeoutMillis = 10000
-            socketTimeoutMillis = 15000
+            socketTimeoutMillis = 30000
         }
     }.also { client ->
         // Interceptor de Autenticación JWT

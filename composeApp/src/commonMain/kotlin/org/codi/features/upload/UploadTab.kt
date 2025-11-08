@@ -26,16 +26,18 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.codi.features.receipt.ReceiptDetailScreen
+import org.codi.features.receipt.ReceiptViewModel
+import org.codi.features.receipt.ReceiptState
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.PrimaryGreen
 import org.codi.theme.SecondaryGreen
 
 // Funciones expect para lanzar la cámara y galería
 @Composable
-expect fun rememberCameraLauncher(onImageCaptured: () -> Unit): () -> Unit
+expect fun rememberCameraLauncher(onImageCaptured: (ByteArray) -> Unit): () -> Unit
 
 @Composable
-expect fun rememberGalleryLauncher(onImageSelected: () -> Unit): () -> Unit
+expect fun rememberGalleryLauncher(onImageSelected: (ByteArray) -> Unit): () -> Unit
 
 object UploadTab : Tab {
     override val options: TabOptions
@@ -61,50 +63,59 @@ class UploadTabScreen : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        var captureState by remember { mutableStateOf(CaptureState.INITIAL) }
+        val viewModel = remember { ReceiptViewModel() }
+        val state = viewModel.state
 
-        when (captureState) {
-            CaptureState.INITIAL -> {
-                UploadCaptureScreen(
-                    onCaptureClick = {
-                        // Aquí se abrirá la cámara nativa
-                        captureState = CaptureState.PROCESSING
-                    },
-                    onGalleryClick = {
-                        // Aquí se abrirá la galería nativa
-                        captureState = CaptureState.PROCESSING
-                    }
-                )
-            }
-            CaptureState.PROCESSING -> {
-                ProcessingScreen(
-                    onProcessingComplete = {
-                        // Navegar a la pantalla de detalle
+        // Manejar cambios de estado del ViewModel
+        LaunchedEffect(state) {
+            when (state) {
+                is ReceiptState.UploadSuccess -> {
+                    // Navegar a la pantalla de detalle con el ID de la boleta
+                    val boletaId = state.response.data?.boletaId
+                    if (boletaId != null) {
                         navigator.push(ReceiptDetailScreen(
-                            receiptId = "1",
-                            storeName = "TOTTUS",
+                            receiptId = boletaId,
+                            storeName = "TOTTUS", // Esto se obtendrá del detalle
                             fromUpload = true
                         ))
                         // Resetear el estado para la próxima captura
-                        captureState = CaptureState.INITIAL
+                        viewModel.resetState()
+                    }
+                }
+                is ReceiptState.Error -> {
+                    // El error se muestra en la UI
+                }
+                else -> {}
+            }
+        }
+
+        when (state) {
+            is ReceiptState.Idle -> {
+                UploadCaptureScreen(
+                    onImageCaptured = { imageBytes ->
+                        viewModel.uploadReceipt(imageBytes)
                     }
                 )
             }
-            CaptureState.RESULT -> {
-                // Este estado ya no se usa
+            is ReceiptState.Uploading -> {
+                ProcessingScreen()
+            }
+            is ReceiptState.Error -> {
+                ErrorScreen(
+                    message = state.message,
+                    onRetry = { viewModel.resetState() }
+                )
+            }
+            else -> {
+                // Otros estados se manejan con LaunchedEffect
+                ProcessingScreen()
             }
         }
     }
 }
 
-enum class CaptureState {
-    INITIAL,
-    PROCESSING,
-    RESULT
-}
-
 @Composable
-fun ProcessingScreen(onProcessingComplete: () -> Unit = {}) {
+fun ProcessingScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -132,19 +143,84 @@ fun ProcessingScreen(onProcessingComplete: () -> Unit = {}) {
             )
         }
     }
+}
 
-    // Simular procesamiento
-    LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(2000) // 2 segundos de procesamiento
-        onProcessingComplete()
+@Composable
+fun ErrorScreen(message: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(CodiThemeValues.colorScheme.background)
+    ) {
+        org.codi.common.components.TopBar(
+            title = "Error"
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Error,
+                contentDescription = null,
+                tint = Color(0xFFE53935),
+                modifier = Modifier.size(80.dp)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Error al procesar",
+                style = CodiThemeValues.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = CodiThemeValues.colorScheme.onBackground
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = message,
+                style = CodiThemeValues.typography.bodyMedium,
+                color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Button(
+                onClick = onRetry,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = CodiThemeValues.colorScheme.tertiary,
+                    contentColor = CodiThemeValues.colorScheme.onTertiary
+                ),
+                shape = RoundedCornerShape(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Intentar de nuevo",
+                    style = CodiThemeValues.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = LocalContentColor.current
+                )
+            }
+        }
     }
 }
 
 @Composable
-fun UploadCaptureScreen(onCaptureClick: () -> Unit, onGalleryClick: () -> Unit) {
+fun UploadCaptureScreen(onImageCaptured: (ByteArray) -> Unit) {
     // Launchers para cámara y galería (multiplataforma)
-    val launchCamera = rememberCameraLauncher(onImageCaptured = onCaptureClick)
-    val launchGallery = rememberGalleryLauncher(onImageSelected = onGalleryClick)
+    val launchCamera = rememberCameraLauncher(onImageCaptured = onImageCaptured)
+    val launchGallery = rememberGalleryLauncher(onImageSelected = onImageCaptured)
 
     Column(
         modifier = Modifier

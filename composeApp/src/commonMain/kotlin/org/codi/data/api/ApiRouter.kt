@@ -4,6 +4,7 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.client.plugins.*
 import io.ktor.http.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -211,6 +212,78 @@ class ApiRouter(
             path = "/promociones/canjear",
             body = request
         )
+    }
+
+    /**
+     * Obtiene el detalle de una boleta procesada.
+     * @param boletaId El ID de la boleta (UUID).
+     */
+    suspend fun getBoletaDetalle(boletaId: String): BoletaDetalleResponse {
+        return request<BoletaDetalleResponse>(
+            method = HttpMethod.Get,
+            path = "/boletas/{boletaId}",
+            routeParams = mapOf("boletaId" to boletaId)
+        )
+    }
+
+    /**
+     * Sube y procesa una boleta mediante OCR.
+     * @param userId El ID del usuario (UUID).
+     * @param imageBytes Los bytes de la imagen de la boleta.
+     * @param fileName El nombre del archivo (opcional).
+     */
+    suspend fun uploadBoleta(
+        userId: String,
+        imageBytes: ByteArray,
+        fileName: String = "boleta.jpg"
+    ): BoletaUploadResponse {
+        val url = "$baseUrl/boletas/{userId}/upload".replace("{userId}", userId)
+
+        val httpResponse: HttpResponse = client.post(url) {
+            // Timeout extendido para procesamiento de imágenes con OCR
+            timeout {
+                requestTimeoutMillis = 60000  // 60 segundos para upload y OCR
+                socketTimeoutMillis = 60000
+            }
+
+            setBody(
+                io.ktor.client.request.forms.MultiPartFormDataContent(
+                    io.ktor.client.request.forms.formData {
+                        append("boleta", imageBytes, io.ktor.http.Headers.build {
+                            append(io.ktor.http.HttpHeaders.ContentType, "image/jpeg")
+                            append(io.ktor.http.HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                        })
+                    }
+                )
+            )
+        }
+
+        val status = httpResponse.status
+        val responseText = try {
+            httpResponse.bodyAsText()
+        } catch (t: Throwable) {
+            null
+        }
+
+        if (!status.isSuccess()) {
+            val normalizedMessage = responseText?.let { txt ->
+                try {
+                    val json = Json.parseToJsonElement(txt)
+                    val obj = json.jsonObject
+                    val maybeMsg = try { obj["message"]?.jsonPrimitive?.content } catch (_: Throwable) { null }
+                        ?: try { obj["error"]?.jsonPrimitive?.content } catch (_: Throwable) { null }
+                    maybeMsg?.trim()?.takeIf { it.isNotEmpty() } ?: txt.trim()
+                } catch (_: Throwable) {
+                    txt.trim()
+                }
+            }?.takeIf { it.isNotBlank() } ?: "HTTP ${status.value} ${status.description}"
+
+            val truncated = if (normalizedMessage.length > 1200) normalizedMessage.take(1200) + "..." else normalizedMessage
+
+            throw ApiException(status, truncated)
+        }
+
+        return httpResponse.body()
     }
 
 }

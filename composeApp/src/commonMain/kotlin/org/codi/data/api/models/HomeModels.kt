@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
 // 1. Modelo para la última boleta
 @Serializable
 data class LastReceipt(
+    val id: String? = null, // ID de la boleta para navegar al detalle (nullable por compatibilidad)
     val nombreTienda: String = "",
     val categoriaTienda: String? = null, // Puede ser null
     val logoTienda: String? = null, // Puede ser null

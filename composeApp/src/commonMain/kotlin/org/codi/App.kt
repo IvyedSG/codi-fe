@@ -5,7 +5,7 @@ import androidx.compose.ui.graphics.Color
 import org.codi.theme.CodiTheme
 import org.codi.ui.ToastHost
 import cafe.adriel.voyager.navigator.Navigator
-import org.codi.features.auth.LoginScreen
+import org.codi.features.splash.SplashScreen
 
 @Composable
 fun App() {
@@ -17,7 +17,8 @@ fun App() {
             isDarkIcons = true // Iconos oscuros porque el fondo es claro
         )
 
-        Navigator(LoginScreen)
+        // Iniciar en SplashScreen para verificar si hay sesión activa
+        Navigator(SplashScreen)
 
         // Toast global
         ToastHost()

@@ -9,9 +9,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import java.io.ByteArrayOutputStream
 
 @Composable
-actual fun rememberCameraLauncher(onImageCaptured: () -> Unit): () -> Unit {
+actual fun rememberCameraLauncher(onImageCaptured: (ByteArray) -> Unit): () -> Unit {
     val context = LocalContext.current
 
     // Launcher para capturar foto
@@ -19,8 +20,11 @@ actual fun rememberCameraLauncher(onImageCaptured: () -> Unit): () -> Unit {
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap: Bitmap? ->
         if (bitmap != null) {
-            // Imagen capturada exitosamente
-            onImageCaptured()
+            // Convertir Bitmap a ByteArray
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, stream)
+            val imageBytes = stream.toByteArray()
+            onImageCaptured(imageBytes)
         }
     }
 
@@ -52,14 +56,26 @@ actual fun rememberCameraLauncher(onImageCaptured: () -> Unit): () -> Unit {
 }
 
 @Composable
-actual fun rememberGalleryLauncher(onImageSelected: () -> Unit): () -> Unit {
+actual fun rememberGalleryLauncher(onImageSelected: (ByteArray) -> Unit): () -> Unit {
+    val context = LocalContext.current
+
     // Launcher para seleccionar imagen de la galería
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            // Imagen seleccionada exitosamente
-            onImageSelected()
+            try {
+                // Leer los bytes de la imagen desde la URI
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val imageBytes = inputStream?.readBytes()
+                inputStream?.close()
+
+                if (imageBytes != null) {
+                    onImageSelected(imageBytes)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

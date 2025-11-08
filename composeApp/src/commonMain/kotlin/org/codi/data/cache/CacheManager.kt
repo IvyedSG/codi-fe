@@ -31,50 +31,85 @@ data class CacheEntry<T>(
  */
 class CacheManager<T> {
     private var cacheEntry: CacheEntry<T>? = null
+    private val cacheMap = mutableMapOf<String, CacheEntry<T>>()
     private val mutex = Mutex()
 
     /**
      * Obtiene los datos del caché
      */
-    suspend fun get(): T? = mutex.withLock {
-        cacheEntry?.data
+    suspend fun get(key: String = "default"): T? = mutex.withLock {
+        if (key == "default") {
+            cacheEntry?.data
+        } else {
+            cacheMap[key]?.data
+        }
     }
 
     /**
      * Obtiene los datos del caché solo si no han expirado
      * @param maxAgeMs Edad máxima en milisegundos
+     * @param key Clave del caché (opcional)
      */
-    suspend fun getIfValid(maxAgeMs: Long): T? = mutex.withLock {
-        cacheEntry?.takeIf { !it.isExpired(maxAgeMs) }?.data
+    suspend fun getIfValid(maxAgeMs: Long, key: String = "default"): T? = mutex.withLock {
+        if (key == "default") {
+            cacheEntry?.takeIf { !it.isExpired(maxAgeMs) }?.data
+        } else {
+            cacheMap[key]?.takeIf { !it.isExpired(maxAgeMs) }?.data
+        }
     }
 
     /**
      * Guarda datos en el caché
+     * @param data Datos a guardar
+     * @param key Clave del caché (opcional)
      */
-    suspend fun set(data: T) = mutex.withLock {
-        cacheEntry = CacheEntry(data)
+    suspend fun set(data: T, key: String = "default") = mutex.withLock {
+        val entry = CacheEntry(data)
+        if (key == "default") {
+            cacheEntry = entry
+        } else {
+            cacheMap[key] = entry
+        }
     }
 
     /**
      * Limpia el caché
+     * @param key Clave del caché a limpiar (opcional, si no se especifica limpia todo)
      */
-    suspend fun clear() = mutex.withLock {
-        cacheEntry = null
+    suspend fun clear(key: String? = null) = mutex.withLock {
+        if (key == null) {
+            cacheEntry = null
+            cacheMap.clear()
+        } else if (key == "default") {
+            cacheEntry = null
+        } else {
+            cacheMap.remove(key)
+        }
     }
 
     /**
      * Verifica si hay datos en caché
+     * @param key Clave del caché (opcional)
      */
-    suspend fun hasData(): Boolean = mutex.withLock {
-        cacheEntry != null
+    suspend fun hasData(key: String = "default"): Boolean = mutex.withLock {
+        if (key == "default") {
+            cacheEntry != null
+        } else {
+            cacheMap.containsKey(key)
+        }
     }
 
     /**
      * Verifica si los datos en caché son válidos
      * @param maxAgeMs Edad máxima en milisegundos
+     * @param key Clave del caché (opcional)
      */
-    suspend fun isValid(maxAgeMs: Long): Boolean = mutex.withLock {
-        cacheEntry?.let { !it.isExpired(maxAgeMs) } ?: false
+    suspend fun isValid(maxAgeMs: Long, key: String = "default"): Boolean = mutex.withLock {
+        if (key == "default") {
+            cacheEntry?.let { !it.isExpired(maxAgeMs) } ?: false
+        } else {
+            cacheMap[key]?.let { !it.isExpired(maxAgeMs) } ?: false
+        }
     }
 }
 
