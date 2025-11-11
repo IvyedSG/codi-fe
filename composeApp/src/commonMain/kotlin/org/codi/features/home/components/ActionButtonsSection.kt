@@ -12,14 +12,17 @@ import androidx.compose.ui.unit.dp
 import org.codi.theme.CodiThemeValues
 
 @Composable
-fun ActionButtonsSection() {
+fun ActionButtonsSection(
+    onEscanearClick: () -> Unit,
+    onVerImpactoClick: () -> Unit
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Botón Escanear
         Button(
-            onClick = { /* Escanear */ },
+            onClick = onEscanearClick,
             colors = ButtonDefaults.buttonColors(
                 containerColor = CodiThemeValues.colorScheme.secondary,
                 contentColor = CodiThemeValues.colorScheme.primary
@@ -47,7 +50,7 @@ fun ActionButtonsSection() {
 
         // Botón Ver Impacto
         Button(
-            onClick = { /* Ver impacto */ },
+            onClick = onVerImpactoClick,
             colors = ButtonDefaults.buttonColors(
                 containerColor = CodiThemeValues.colorScheme.tertiary,
                 contentColor = CodiThemeValues.colorScheme.onTertiary

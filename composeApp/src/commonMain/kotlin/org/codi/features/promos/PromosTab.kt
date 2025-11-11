@@ -97,8 +97,8 @@ fun PromosScreen(viewModel: PromoViewModel) {
                             )
                         )
                     },
-                    selectedContentColor = SecondaryGreen,
-                    unselectedContentColor = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.6f)
+                    selectedContentColor = CodiThemeValues.colorScheme.onBackground,
+                    unselectedContentColor = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.7f)
                 )
                 Tab(
                     selected = viewModel.currentTab == 1,
@@ -111,8 +111,8 @@ fun PromosScreen(viewModel: PromoViewModel) {
                             )
                         )
                     },
-                    selectedContentColor = SecondaryGreen,
-                    unselectedContentColor = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.6f)
+                    selectedContentColor = CodiThemeValues.colorScheme.onBackground,
+                    unselectedContentColor = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.7f)
                 )
             }
 

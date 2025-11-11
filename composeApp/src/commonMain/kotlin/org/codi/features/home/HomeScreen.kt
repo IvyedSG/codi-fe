@@ -7,9 +7,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import org.codi.common.components.TopBar
 import org.codi.features.home.components.EmptyStateGuide
 import org.codi.features.home.components.HomeContent
+import org.codi.features.profile.ProfileTab
+import org.codi.features.promos.PromosTab
+import org.codi.features.upload.UploadTab
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.PrimaryGreen
 import org.codi.ui.ViewModelStore
@@ -17,6 +21,7 @@ import org.codi.ui.ViewModelStore
 @Composable
 fun HomeScreen() {
     val viewModel = ViewModelStore.getHomeViewModel()
+    val tabNavigator = LocalTabNavigator.current
 
     LaunchedEffect(Unit) {
         viewModel.loadHomeData()
@@ -40,7 +45,21 @@ fun HomeScreen() {
                 if (currentState.isEmpty) {
                     EmptyStateGuide()
                 } else {
-                    HomeContent(homeData = currentState.home)
+                    HomeContent(
+                        homeData = currentState.home,
+                        onEscanearClick = {
+                            // Navegar a la pestaña de Upload (Subir)
+                            tabNavigator.current = UploadTab
+                        },
+                        onVerImpactoClick = {
+                            // Navegar a la pestaña de Profile
+                            tabNavigator.current = ProfileTab
+                        },
+                        onVerPromosClick = {
+                            // Navegar a la pestaña de Promos
+                            tabNavigator.current = PromosTab
+                        }
+                    )
                 }
             }
         }

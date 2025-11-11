@@ -13,7 +13,8 @@ import org.codi.theme.CodiThemeValues
 @Composable
 fun GreenReceiptsColumn(
     modifier: Modifier = Modifier,
-    count: String
+    count: String,
+    onVerPromosClick: () -> Unit
 ) {
     Column(
         modifier = modifier,
@@ -37,7 +38,7 @@ fun GreenReceiptsColumn(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Button(
-            onClick = { /* Navegar a promos */ },
+            onClick = onVerPromosClick,
             colors = ButtonDefaults.buttonColors(
                 containerColor = CodiThemeValues.colorScheme.tertiary,
                 contentColor = CodiThemeValues.colorScheme.onTertiary

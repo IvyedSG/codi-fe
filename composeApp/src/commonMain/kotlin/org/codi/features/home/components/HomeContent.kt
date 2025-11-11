@@ -9,7 +9,12 @@ import androidx.compose.ui.unit.dp
 import org.codi.data.api.models.HomeResponse
 
 @Composable
-fun HomeContent(homeData: HomeResponse) {
+fun HomeContent(
+    homeData: HomeResponse,
+    onEscanearClick: () -> Unit,
+    onVerImpactoClick: () -> Unit,
+    onVerPromosClick: () -> Unit
+) {
     val data = homeData.data
     val ultimaBoleta = data?.ultimaBoleta
     val puntosVerdes = data?.puntosVerdes ?: 0
@@ -33,7 +38,8 @@ fun HomeContent(homeData: HomeResponse) {
         // Sección de Estadísticas con datos del endpoint
         StatsSection(
             puntosVerdes = puntosVerdes,
-            co2Acumulado = co2Acumulado
+            co2Acumulado = co2Acumulado,
+            onVerPromosClick = onVerPromosClick
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -44,7 +50,10 @@ fun HomeContent(homeData: HomeResponse) {
         Spacer(modifier = Modifier.height(32.dp))
 
         // Botones de acción
-        ActionButtonsSection()
+        ActionButtonsSection(
+            onEscanearClick = onEscanearClick,
+            onVerImpactoClick = onVerImpactoClick
+        )
 
         Spacer(modifier = Modifier.height(32.dp))
     }

@@ -112,8 +112,8 @@ fun RedeemedPromoItem(
             ) {
                 Text(
                     text = promocion.tipoPromocion,
-                    style = CodiThemeValues.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                    color = SecondaryGreen,
+                    style = CodiThemeValues.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = CodiThemeValues.colorScheme.onBackground,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 )
             }

@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -62,15 +63,17 @@ fun LastReceiptCard(lastReceipt: LastReceipt) {
                     Text(
                         text = "Último Recibo",
                         style = CodiThemeValues.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.ExtraBold
                         ),
-                        color = CodiThemeValues.colorScheme.primary
+                        color = CodiThemeValues.colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = lastReceipt.nombreTienda,
-                        style = CodiThemeValues.typography.bodyLarge,
-                        color = CodiThemeValues.colorScheme.primary
+                        style = CodiThemeValues.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.ExtraBold
+                        ),
+                        color = CodiThemeValues.colorScheme.onBackground
                     )
 
                     // Solo mostrar categoría si no es null
@@ -78,8 +81,10 @@ fun LastReceiptCard(lastReceipt: LastReceipt) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = categoria,
-                            style = CodiThemeValues.typography.bodySmall,
-                            color = CodiThemeValues.colorScheme.primary.copy(alpha = 0.6f)
+                            style = CodiThemeValues.typography.bodySmall.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = CodiThemeValues.colorScheme.onBackground
                         )
                     }
 
@@ -90,26 +95,30 @@ fun LastReceiptCard(lastReceipt: LastReceipt) {
                         Icon(
                             imageVector = Icons.Default.CalendarToday,
                             contentDescription = "Fecha",
-                            tint = CodiThemeValues.colorScheme.primary.copy(alpha = 0.7f),
+                            tint = CodiThemeValues.colorScheme.onBackground,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = date,
-                            style = CodiThemeValues.typography.bodyMedium,
-                            color = CodiThemeValues.colorScheme.primary.copy(alpha = 0.7f)
+                            style = CodiThemeValues.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = CodiThemeValues.colorScheme.onBackground
                         )
                         Spacer(modifier = Modifier.width(16.dp))
                         Icon(
                             imageVector = Icons.Default.AttachMoney,
                             contentDescription = "Monto",
-                            tint = CodiThemeValues.colorScheme.primary.copy(alpha = 0.7f),
+                            tint = CodiThemeValues.colorScheme.onBackground,
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
                             text = "S/ ${(lastReceipt.precioTotal * 100).toInt() / 100.0}",
-                            style = CodiThemeValues.typography.bodyMedium,
-                            color = CodiThemeValues.colorScheme.primary.copy(alpha = 0.7f)
+                            style = CodiThemeValues.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = CodiThemeValues.colorScheme.onBackground
                         )
                     }
                 }
@@ -125,7 +134,7 @@ fun LastReceiptCard(lastReceipt: LastReceipt) {
                     Text(
                         text = lastReceipt.nombreTienda.firstOrNull()?.uppercase() ?: "T",
                         style = CodiThemeValues.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = CodiThemeValues.colorScheme.primary
+                        color = CodiThemeValues.colorScheme.onBackground
                     )
                 }
             }
@@ -141,14 +150,16 @@ fun LastReceiptCard(lastReceipt: LastReceipt) {
                     Text(
                         text = "${(lastReceipt.co2Total * 10).toInt() / 10.0} Kg",
                         style = CodiThemeValues.typography.displaySmall.copy(
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.ExtraBold
                         ),
-                        color = CodiThemeValues.colorScheme.primary
+                        color = CodiThemeValues.colorScheme.onBackground
                     )
                     Text(
                         text = "CO₂ generado",
-                        style = CodiThemeValues.typography.bodySmall,
-                        color = CodiThemeValues.colorScheme.primary.copy(alpha = 0.7f)
+                        style = CodiThemeValues.typography.bodySmall.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = CodiThemeValues.colorScheme.onBackground
                     )
                 }
 
@@ -164,17 +175,18 @@ fun LastReceiptCard(lastReceipt: LastReceipt) {
                         }
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = CodiThemeValues.colorScheme.tertiary,
-                        contentColor = CodiThemeValues.colorScheme.onTertiary
+                        containerColor = Color(0xFF2C2C2C),
+                        contentColor = Color.White
                     ),
                     shape = CodiThemeValues.shapes.medium,
-                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
-                    enabled = lastReceipt.id != null // Deshabilitar si no hay ID
+                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
                 ) {
                     Text(
                         text = "Ver detalles",
-                        style = CodiThemeValues.typography.labelMedium,
-                        color = LocalContentColor.current
+                        style = CodiThemeValues.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = Color.White
                     )
                 }
             }

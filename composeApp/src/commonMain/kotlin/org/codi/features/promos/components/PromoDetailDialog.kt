@@ -57,18 +57,18 @@ fun PromoDetailDialog(
     }
 
     Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Column(
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
+                    .padding(16.dp)
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                ) {
                 // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -152,12 +152,12 @@ private fun PromoDetailContent(promocion: Promocion) {
         modifier = Modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Título
         Text(
             text = promocion.titulo,
-            style = CodiThemeValues.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            style = CodiThemeValues.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             color = CodiThemeValues.colorScheme.onBackground
         )
 
@@ -199,41 +199,6 @@ private fun PromoDetailContent(promocion: Promocion) {
             value = promocion.tipoPromocion
         )
 
-        // Detalles (código de descuento, etc.)
-        promocion.detalles?.let { detalles ->
-            Surface(
-                color = SecondaryGreen.copy(alpha = 0.1f),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.QrCode,
-                            contentDescription = null,
-                            tint = SecondaryGreen,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "Código de Canje",
-                            style = CodiThemeValues.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                            color = SecondaryGreen
-                        )
-                    }
-                    Text(
-                        text = detalles,
-                        style = CodiThemeValues.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                        color = CodiThemeValues.colorScheme.onBackground
-                    )
-                }
-            }
-        }
 
         // Fecha de uso
         promocion.fechaUso?.let { fecha ->
@@ -262,17 +227,16 @@ private fun DetailItem(
     value: String
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.6f),
-                modifier = Modifier.size(18.dp)
             )
             Text(
                 text = label,

@@ -81,7 +81,7 @@ fun PromocionItem(
                     Text(
                         text = promocion.tipoPromocion,
                         style = CodiThemeValues.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = SecondaryGreen,
+                        color = CodiThemeValues.colorScheme.onBackground,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
@@ -117,8 +117,8 @@ fun PromocionItem(
                 Column {
                     Text(
                         text = "Boletas requeridas: ${promocion.boletasRequeridas}",
-                        style = CodiThemeValues.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                        color = if (canCanjear) SecondaryGreen else Color.Gray
+                        style = CodiThemeValues.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = CodiThemeValues.colorScheme.onBackground
                     )
                     if (!canCanjear && promocion.disponible != false) {
                         Text(

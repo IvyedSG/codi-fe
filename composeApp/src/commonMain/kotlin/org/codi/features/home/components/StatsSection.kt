@@ -8,7 +8,8 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun StatsSection(
     puntosVerdes: Int,
-    co2Acumulado: Double
+    co2Acumulado: Double,
+    onVerPromosClick: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -16,7 +17,8 @@ fun StatsSection(
     ) {
         GreenReceiptsColumn(
             modifier = Modifier.weight(1f),
-            count = puntosVerdes.toString()
+            count = puntosVerdes.toString(),
+            onVerPromosClick = onVerPromosClick
         )
 
         CO2AccumulatedColumn(
