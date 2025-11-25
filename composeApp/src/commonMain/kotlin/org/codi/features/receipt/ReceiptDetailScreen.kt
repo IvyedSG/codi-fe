@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +23,7 @@ import org.codi.theme.CodiThemeValues
 import org.codi.theme.PrimaryGreen
 import org.codi.theme.SecondaryGreen
 import org.codi.utils.formatDecimal
+import org.codi.data.api.models.RecommendationsResponse
 
 data class ReceiptDetailScreen(
     val receiptId: String,
@@ -33,7 +35,8 @@ data class ReceiptDetailScreen(
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = remember { ReceiptViewModel() }
-        val state = viewModel.state
+        val detailState = viewModel.detailState
+        val recState = viewModel.recommendationsState
         var showRecommendations by remember { mutableStateOf(false) }
 
         // Cargar datos al iniciar
@@ -41,8 +44,8 @@ data class ReceiptDetailScreen(
             viewModel.loadReceiptDetail(receiptId)
         }
 
-        when (state) {
-            is ReceiptState.Loading -> {
+        when (detailState) {
+            is DetailState.Loading -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -54,8 +57,8 @@ data class ReceiptDetailScreen(
                     )
                 }
             }
-            is ReceiptState.DetailSuccess -> {
-                val boleta = state.response.data
+            is DetailState.Success -> {
+                val boleta = detailState.response.data
                 if (boleta != null) {
                     Column(
                         modifier = Modifier
@@ -83,7 +86,12 @@ data class ReceiptDetailScreen(
 
                             // Botón ver/ocultar recomendaciones
                             Button(
-                                onClick = { showRecommendations = !showRecommendations },
+                                onClick = {
+                                    showRecommendations = !showRecommendations
+                                    if (showRecommendations) {
+                                        viewModel.loadRecommendations(receiptId)
+                                    }
+                                },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(56.dp),
@@ -107,9 +115,34 @@ data class ReceiptDetailScreen(
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // Mostrar recomendaciones si está activo
+                            // Mostrar recomendaciones si está activo: usar el estado separado de recomendaciones
                             if (showRecommendations) {
-                                RecommendationsSection()
+                                when (val rst = recState) {
+                                    is RecommendationsState.Loading -> {
+                                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                CircularProgressIndicator(color = PrimaryGreen)
+                                                Spacer(modifier = Modifier.height(8.dp))
+                                                Text("Generando recomendaciones... Esto puede tardar unos segundos", style = CodiThemeValues.typography.bodySmall, color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.7f))
+                                            }
+                                        }
+                                    }
+                                    is RecommendationsState.Success -> {
+                                        val resp = rst.response
+                                        RecommendationsSection(response = resp)
+                                    }
+                                    is RecommendationsState.Error -> {
+                                        Text(
+                                            text = "Error al obtener recomendaciones: ${rst.message}",
+                                            style = CodiThemeValues.typography.bodyMedium,
+                                            color = CodiThemeValues.colorScheme.error
+                                        )
+                                    }
+                                    else -> {
+                                        // Idle: no mostrar mensaje ni botón — al abrir la sección se invoca la carga y se mostrará el loader
+                                    }
+                                }
+
                                 Spacer(modifier = Modifier.height(16.dp))
                             }
 
@@ -126,7 +159,7 @@ data class ReceiptDetailScreen(
                                 shape = CodiThemeValues.shapes.medium
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.ArrowBack,
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = null,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -143,7 +176,7 @@ data class ReceiptDetailScreen(
                     }
                 }
             }
-            is ReceiptState.Error -> {
+            is DetailState.Error -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -178,7 +211,7 @@ data class ReceiptDetailScreen(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         Text(
-                            text = state.message,
+                            text = detailState.message,
                             style = CodiThemeValues.typography.bodyMedium,
                             color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.7f),
                             textAlign = TextAlign.Center
@@ -449,60 +482,55 @@ fun ReceiptItem(
 }
 
 @Composable
-fun RecommendationsSection() {
+fun RecommendationsSection(response: RecommendationsResponse? = null) {
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Recomendación 1
-        RecommendationCard(
-            productName = "Leche de almendras NaturGreen",
-            co2Saved = "0.5 Kg de CO₂ vs 1.8 Kg",
-            storeName = "Wong",
-            price = "S/ 9.90"
-        )
-
-        // Recomendación 2
-        RecommendationCard(
-            productName = "Hamburguesa NotCo Plant Based",
-            co2Saved = "0.4 Kg de CO₂ vs 2.1 Kg",
-            storeName = "Plaza Vea",
-            price = "S/ 22.50"
-        )
-
-        // Recomendación 3
-        RecommendationCard(
-            productName = "Detergente Ecológico Ecover",
-            co2Saved = "0.3 Kg de CO₂ vs 1.1 Kg",
-            storeName = "Tottus",
-            price = "S/ 20.50"
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Card de ahorro potencial
-        Surface(
-            color = SecondaryGreen.copy(alpha = 0.15f),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Ahorro potencial de CO₂:",
-                    style = CodiThemeValues.typography.bodyMedium,
-                    color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.7f)
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "3.2 Kg de CO₂ (53% menos)",
-                    style = CodiThemeValues.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = PrimaryGreen
-                )
+        if (response == null || response.data == null) {
+            // No hay recomendaciones (UI vacía). El botón para generarlas está en la pantalla de detalle.
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             }
-        }
-    }
+        } else {
+             // Mostrar lista real de recomendaciones
+             val items = response.data.recomendaciones
+             items.forEach { item ->
+                 RecommendationCard(
+                     productName = item.productoRecomendado.nombre,
+                     co2Saved = "${item.mejora.co2Ahorrado.formatDecimal()} Kg de CO₂ vs ${item.productoOriginal.co2.formatDecimal()} Kg",
+                     storeName = item.productoRecomendado.tienda ?: "-",
+                     price = "-"
+                 )
+             }
+
+             Spacer(modifier = Modifier.height(8.dp))
+
+             // Resumen
+             response.data.resumen.let { resumen ->
+                 Surface(
+                     color = SecondaryGreen.copy(alpha = 0.15f),
+                     shape = RoundedCornerShape(12.dp),
+                     modifier = Modifier.fillMaxWidth()
+                 ) {
+                     Column(
+                         modifier = Modifier.padding(16.dp),
+                         horizontalAlignment = Alignment.CenterHorizontally
+                     ) {
+                         Text(
+                             text = "Ahorro potencial de CO₂:",
+                             style = CodiThemeValues.typography.bodyMedium,
+                             color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.7f)
+                         )
+                         Spacer(modifier = Modifier.height(4.dp))
+                         Text(
+                             text = "${resumen.co2TotalAhorrable.formatDecimal()} Kg de CO₂ (${resumen.porcentajeMejoraPromedio.formatDecimal()}% menos)",
+                             style = CodiThemeValues.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                             color = PrimaryGreen
+                         )
+                     }
+                 }
+             }
+         }
+     }
 }
 
 @Composable
@@ -570,4 +598,3 @@ fun RecommendationCard(
         }
     }
 }
-

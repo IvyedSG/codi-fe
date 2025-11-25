@@ -55,7 +55,7 @@ class ApiRouter(
         val status = httpResponse.status
         val responseText = try {
             httpResponse.bodyAsText()
-        } catch (t: Throwable) {
+        } catch (_: Throwable) {
             null
         }
 
@@ -249,9 +249,9 @@ class ApiRouter(
             setBody(
                 io.ktor.client.request.forms.MultiPartFormDataContent(
                     io.ktor.client.request.forms.formData {
-                        append("boleta", imageBytes, io.ktor.http.Headers.build {
-                            append(io.ktor.http.HttpHeaders.ContentType, "image/jpeg")
-                            append(io.ktor.http.HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                        append("boleta", imageBytes, Headers.build {
+                            append(HttpHeaders.ContentType, "image/jpeg")
+                            append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
                         })
                     }
                 )
@@ -261,7 +261,7 @@ class ApiRouter(
         val status = httpResponse.status
         val responseText = try {
             httpResponse.bodyAsText()
-        } catch (t: Throwable) {
+        } catch (_: Throwable) {
             null
         }
 
@@ -284,6 +284,30 @@ class ApiRouter(
         }
 
         return httpResponse.body()
+    }
+
+    /**
+     * Obtiene datos de usuario por DNI (simulación)
+     * @param dni DNI (8 dígitos)
+     */
+    suspend fun getUserByDni(dni: String): DniResponse {
+        return request<DniResponse>(
+            method = HttpMethod.Get,
+            path = "/auth/user/dni/{dni}",
+            routeParams = mapOf("dni" to dni)
+        )
+    }
+
+    /**
+     * Obtiene recomendaciones para una boleta (genera o retorna de caché en backend).
+     * @param boletaId UUID de la boleta
+     */
+    suspend fun getRecommendations(boletaId: String): org.codi.data.api.models.RecommendationsResponse {
+        return request<org.codi.data.api.models.RecommendationsResponse>(
+            method = HttpMethod.Get,
+            path = "/boletas/{boletaId}/recommendations",
+            routeParams = mapOf("boletaId" to boletaId)
+        )
     }
 
 }

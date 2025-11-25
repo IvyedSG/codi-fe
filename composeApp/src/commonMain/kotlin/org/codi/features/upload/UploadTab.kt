@@ -27,7 +27,7 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.codi.features.receipt.ReceiptDetailScreen
 import org.codi.features.receipt.ReceiptViewModel
-import org.codi.features.receipt.ReceiptState
+import org.codi.features.receipt.UploadState
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.PrimaryGreen
 import org.codi.theme.SecondaryGreen
@@ -64,46 +64,45 @@ class UploadTabScreen : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = remember { ReceiptViewModel() }
-        val state = viewModel.state
+        val uploadState = viewModel.uploadState
 
         // Manejar cambios de estado del ViewModel
-        LaunchedEffect(state) {
-            when (state) {
-                is ReceiptState.UploadSuccess -> {
-                    // Navegar a la pantalla de detalle con el ID de la boleta
-                    val boletaId = state.response.data?.boletaId
+        LaunchedEffect(uploadState) {
+            when (uploadState) {
+                is UploadState.Success -> {
+                    val boletaId = uploadState.response.data?.boletaId
                     if (boletaId != null) {
                         navigator.push(ReceiptDetailScreen(
                             receiptId = boletaId,
-                            storeName = "TOTTUS", // Esto se obtendrá del detalle
+                            storeName = "TOTTUS",
                             fromUpload = true
                         ))
                         // Resetear el estado para la próxima captura
-                        viewModel.resetState()
+                        viewModel.resetStates()
                     }
                 }
-                is ReceiptState.Error -> {
-                    // El error se muestra en la UI
+                is UploadState.Error -> {
+                    // se mostrará en la UI
                 }
                 else -> {}
             }
         }
 
-        when (state) {
-            is ReceiptState.Idle -> {
+        when (uploadState) {
+            is UploadState.Idle -> {
                 UploadCaptureScreen(
                     onImageCaptured = { imageBytes ->
                         viewModel.uploadReceipt(imageBytes)
                     }
                 )
             }
-            is ReceiptState.Uploading -> {
+            is UploadState.Uploading -> {
                 ProcessingScreen()
             }
-            is ReceiptState.Error -> {
+            is UploadState.Error -> {
                 ErrorScreen(
-                    message = state.message,
-                    onRetry = { viewModel.resetState() }
+                    message = uploadState.message,
+                    onRetry = { viewModel.resetStates() }
                 )
             }
             else -> {

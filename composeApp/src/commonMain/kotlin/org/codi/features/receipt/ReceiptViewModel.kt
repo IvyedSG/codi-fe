@@ -9,38 +9,57 @@ import kotlinx.coroutines.launch
 import org.codi.data.api.ApiClient
 import org.codi.data.api.models.BoletaDetalleResponse
 import org.codi.data.api.models.BoletaUploadResponse
+import org.codi.data.api.models.RecommendationsResponse
 import org.codi.data.storage.TokenStorage
 import org.codi.data.cache.CacheManager
 import org.codi.data.cache.CacheDuration
 
-sealed class ReceiptState {
-    object Idle : ReceiptState()
-    object Uploading : ReceiptState()
-    object Loading : ReceiptState()
-    data class UploadSuccess(val response: BoletaUploadResponse) : ReceiptState()
-    data class DetailSuccess(val response: BoletaDetalleResponse) : ReceiptState()
-    data class Error(val message: String) : ReceiptState()
+sealed class DetailState {
+    object Idle : DetailState()
+    object Loading : DetailState()
+    data class Success(val response: BoletaDetalleResponse) : DetailState()
+    data class Error(val message: String) : DetailState()
+}
+
+sealed class RecommendationsState {
+    object Idle : RecommendationsState()
+    data class Loading(val receiptId: String) : RecommendationsState()
+    data class Success(val receiptId: String, val response: RecommendationsResponse) : RecommendationsState()
+    data class Error(val message: String) : RecommendationsState()
+}
+
+sealed class UploadState {
+    object Idle : UploadState()
+    object Uploading : UploadState()
+    data class Success(val response: BoletaUploadResponse) : UploadState()
+    data class Error(val message: String) : UploadState()
 }
 
 class ReceiptViewModel {
-    var state by mutableStateOf<ReceiptState>(ReceiptState.Idle)
+    // Estado separado para detalle y recomendaciones para evitar que una petición sobrescriba a la otra
+    var detailState by mutableStateOf<DetailState>(DetailState.Idle)
+        private set
+
+    var recommendationsState by mutableStateOf<RecommendationsState>(RecommendationsState.Idle)
+        private set
+
+    var uploadState by mutableStateOf<UploadState>(UploadState.Idle)
         private set
 
     private val cache = CacheManager<BoletaDetalleResponse>()
+    private val recommendationsCache = CacheManager<RecommendationsResponse>()
 
     /**
      * Sube una imagen de boleta para procesamiento.
-     * @param imageBytes Los bytes de la imagen.
-     * @param fileName El nombre del archivo (opcional).
      */
     fun uploadReceipt(imageBytes: ByteArray, fileName: String = "boleta.jpg") {
         CoroutineScope(Dispatchers.Default).launch {
             try {
-                state = ReceiptState.Uploading
+                uploadState = UploadState.Uploading
 
                 val userId = TokenStorage.getUserId()
                 if (userId.isNullOrBlank()) {
-                    state = ReceiptState.Error("Usuario no autenticado")
+                    uploadState = UploadState.Error("Usuario no autenticado")
                     return@launch
                 }
 
@@ -51,59 +70,79 @@ class ReceiptViewModel {
                 )
 
                 if (response.success) {
-                    state = ReceiptState.UploadSuccess(response)
+                    uploadState = UploadState.Success(response)
                 } else {
-                    state = ReceiptState.Error(response.message)
+                    uploadState = UploadState.Error(response.message)
                 }
             } catch (e: Exception) {
-                state = ReceiptState.Error(
-                    e.message ?: "Error al procesar la boleta"
-                )
+                uploadState = UploadState.Error(e.message ?: "Error al procesar la boleta")
             }
         }
     }
 
     /**
      * Carga el detalle de una boleta procesada.
-     * @param boletaId El ID de la boleta.
-     * @param forceRefresh Fuerza la recarga ignorando el caché.
      */
     fun loadReceiptDetail(boletaId: String, forceRefresh: Boolean = false) {
         CoroutineScope(Dispatchers.Default).launch {
             try {
                 val cacheKey = "receipt_$boletaId"
 
-                // Si hay datos en caché válidos y no es un refresh forzado
                 val cachedData = cache.getIfValid(CacheDuration.FIVE_MINUTES, cacheKey)
                 if (cachedData != null && !forceRefresh) {
-                    state = ReceiptState.DetailSuccess(cachedData)
+                    detailState = DetailState.Success(cachedData)
                     return@launch
                 }
 
-                state = ReceiptState.Loading
+                detailState = DetailState.Loading
 
                 val response = ApiClient.router.getBoletaDetalle(boletaId)
 
                 if (response.success) {
-                    // Guardar en caché
                     cache.set(response, cacheKey)
-                    state = ReceiptState.DetailSuccess(response)
+                    detailState = DetailState.Success(response)
                 } else {
-                    state = ReceiptState.Error(response.message)
+                    detailState = DetailState.Error(response.message)
                 }
             } catch (e: Exception) {
-                state = ReceiptState.Error(
-                    e.message ?: "Error al cargar el detalle de la boleta"
-                )
+                detailState = DetailState.Error(e.message ?: "Error al cargar el detalle de la boleta")
             }
         }
     }
 
     /**
-     * Resetea el estado a Idle.
+     * Obtiene (o genera) recomendaciones para una boleta.
+     * Usa caché local para evitar peticiones repetidas en la misma sesión.
      */
-    fun resetState() {
-        state = ReceiptState.Idle
+    fun loadRecommendations(boletaId: String, forceRefresh: Boolean = false) {
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
+                val cacheKey = "reco_$boletaId"
+                val cached = recommendationsCache.getIfValid(CacheDuration.FIVE_MINUTES, cacheKey)
+                if (cached != null && !forceRefresh) {
+                    recommendationsState = RecommendationsState.Success(boletaId, cached)
+                    return@launch
+                }
+
+                recommendationsState = RecommendationsState.Loading(boletaId)
+
+                val resp = ApiClient.router.getRecommendations(boletaId)
+
+                if (resp.success && resp.data != null) {
+                    recommendationsCache.set(resp, cacheKey)
+                    recommendationsState = RecommendationsState.Success(boletaId, resp)
+                } else {
+                    recommendationsState = RecommendationsState.Error(resp.message)
+                }
+            } catch (e: Exception) {
+                recommendationsState = RecommendationsState.Error(e.message ?: "Error al obtener recomendaciones")
+            }
+        }
+    }
+
+    fun resetStates() {
+        detailState = DetailState.Idle
+        recommendationsState = RecommendationsState.Idle
+        uploadState = UploadState.Idle
     }
 }
-

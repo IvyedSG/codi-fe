@@ -34,8 +34,11 @@ import org.codi.data.api.ApiClient
 import org.codi.data.api.ApiException
 import io.ktor.http.HttpStatusCode
 import org.codi.data.api.models.RegisterRequest
+import org.codi.data.api.models.DniResponse
 import org.codi.data.storage.TokenStorage
 import org.codi.ui.ToastManager
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.ui.window.Dialog
 
 object RegisterScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -52,6 +55,12 @@ object RegisterScreen : Screen {
 
         val scope = rememberCoroutineScope()
         val snackbarHostState = remember { SnackbarHostState() }
+
+        // Estado para dialogo DNI (movido arriba para ser accesible desde la lambda de registro)
+        var showDniDialog by remember { mutableStateOf(false) }
+        var dniValue by remember { mutableStateOf("") }
+        var dniLoading by remember { mutableStateOf(false) }
+        var dniResult by remember { mutableStateOf<DniResponse?>(null) }
 
         val buttonEnabled = !isLoading &&
                            nombre.isNotBlank() &&
@@ -269,7 +278,8 @@ object RegisterScreen : Screen {
                                             }
                                         }
 
-                                        navigator.replace(HomeTabNavigator)
+                                        // En vez de navegar inmediatamente, mostramos el diálogo para asociar DNI
+                                        showDniDialog = true
                                     } else {
                                         val msg = resp.message.takeIf { it.isNotBlank() }
                                             ?: resp.error.takeIf { it?.isNotBlank() == true }
@@ -355,6 +365,150 @@ object RegisterScreen : Screen {
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))
+                }
+            }
+        }
+
+        // --- DIALOGO para DNI ---
+        if (showDniDialog) {
+            // Dialog personalizado para adaptarlo al theme
+            Dialog(onDismissRequest = { showDniDialog = false }) {
+                Surface(
+                    shape = CodiThemeValues.shapes.medium,
+                    color = CodiThemeValues.colorScheme.surface,
+                    tonalElevation = 8.dp,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Column(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)) {
+
+                        // Header con icono
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = CodiThemeValues.colorScheme.primary,
+                                modifier = Modifier.size(28.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Asociar DNI",
+                                style = CodiThemeValues.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = CodiThemeValues.colorScheme.onSurface
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = "Ingresa tu DNI para confirmar tu identidad. Al completar 8 dígitos se buscará automáticamente.",
+                            style = CodiThemeValues.typography.bodyMedium,
+                            color = CodiThemeValues.colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedTextField(
+                            value = dniValue,
+                            onValueChange = { v ->
+                                val clean = v.filter { it.isDigit() }.take(8)
+                                dniValue = clean
+
+                                if (clean.length == 8) {
+                                    dniLoading = true
+                                    dniResult = null
+                                    scope.launch {
+                                        try {
+                                            val resp = ApiClient.router.getUserByDni(clean)
+                                            dniResult = resp
+                                        } catch (t: Throwable) {
+                                            ToastManager.show(t.message ?: "Error al buscar DNI")
+                                        } finally {
+                                            dniLoading = false
+                                        }
+                                    }
+                                } else {
+                                    dniResult = null
+                                }
+                            },
+                            placeholder = { Text("Ej: 98765432", color = CodiThemeValues.colorScheme.onSurfaceVariant) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = CodiThemeValues.colorScheme.primary,
+                                unfocusedBorderColor = CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.12f),
+                                focusedLabelColor = CodiThemeValues.colorScheme.primary,
+                                cursorColor = CodiThemeValues.colorScheme.primary,
+                                focusedLeadingIconColor = CodiThemeValues.colorScheme.primary
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        if (dniLoading) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = CodiThemeValues.colorScheme.primary,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Buscando...", color = CodiThemeValues.colorScheme.onSurface)
+                            }
+                        }
+
+                        dniResult?.let { res ->
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            if (res.success && res.data != null) {
+                                Card(
+                                    colors = CardDefaults.cardColors(containerColor = CodiThemeValues.colorScheme.secondaryContainer),
+                                    shape = CodiThemeValues.shapes.small,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        // Forzar color negro para asegurar legibilidad sobre el container
+                                        Text(text = "Nombre: ${res.data.nombre} ${res.data.apellido}", style = CodiThemeValues.typography.bodyLarge, color = Color.Black)
+                                        Text(text = "DNI: ${res.data.dni}", style = CodiThemeValues.typography.bodyMedium, color = Color.Black)
+                                    }
+                                }
+                            } else {
+                                // Mensaje de error/estado del backend
+                                Text(
+                                    text = res.message,
+                                    style = CodiThemeValues.typography.bodyMedium,
+                                    color = CodiThemeValues.colorScheme.error
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(onClick = { showDniDialog = false }) {
+                                Text("Cancelar", color = CodiThemeValues.colorScheme.onSurfaceVariant)
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            val confirmEnabled = dniResult?.success == true && dniResult?.data != null && !dniLoading
+
+                            Button(
+                                onClick = {
+                                    // Confirmar y navegar si hay resultado válido
+                                    showDniDialog = false
+                                    navigator.replace(HomeTabNavigator)
+                                },
+                                enabled = confirmEnabled,
+                                colors = ButtonDefaults.buttonColors(containerColor = CodiThemeValues.colorScheme.primary)
+                            ) {
+                                Text("Confirmar", color = CodiThemeValues.colorScheme.onPrimary)
+                            }
+                        }
+
+                    }
                 }
             }
         }
