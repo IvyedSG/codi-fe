@@ -43,7 +43,12 @@ fun HomeScreen() {
             is HomeState.Success -> {
                 // Mostrar EmptyState si el usuario no tiene recibos
                 if (currentState.isEmpty) {
-                    EmptyStateGuide()
+                    EmptyStateGuide(
+                        onEscanearClick = {
+                            // Navegar a la pestaña de Upload (Subir)
+                            tabNavigator.current = UploadTab
+                        }
+                    )
                 } else {
                     HomeContent(
                         homeData = currentState.home,

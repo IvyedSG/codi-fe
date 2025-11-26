@@ -19,7 +19,9 @@ import org.codi.theme.PrimaryGreen
 import org.codi.theme.SecondaryGreen
 
 @Composable
-fun EmptyStateGuide() {
+fun EmptyStateGuide(
+    onEscanearClick: () -> Unit = {}
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -92,7 +94,8 @@ fun EmptyStateGuide() {
                 colors = CardDefaults.cardColors(
                     containerColor = SecondaryGreen.copy(alpha = 0.1f)
                 ),
-                shape = CodiThemeValues.shapes.large
+                shape = CodiThemeValues.shapes.large,
+                onClick = onEscanearClick
             ) {
                 Row(
                     modifier = Modifier
