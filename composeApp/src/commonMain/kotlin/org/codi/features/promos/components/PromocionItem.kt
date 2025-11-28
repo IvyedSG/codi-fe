@@ -19,7 +19,8 @@ import org.codi.theme.SecondaryGreen
 fun PromocionItem(
     promocion: Promocion,
     puntosUsuario: Int,
-    onCanjear: (String) -> Unit
+    onCanjear: (String) -> Unit,
+    onVerDetalle: (String) -> Unit = {}
 ) {
     var showDialog by remember { mutableStateOf(false) }
     val canCanjear = puntosUsuario >= promocion.boletasRequeridas
@@ -30,7 +31,8 @@ fun PromocionItem(
             .padding(horizontal = 20.dp, vertical = 8.dp),
         color = Color.White,
         shape = RoundedCornerShape(16.dp),
-        shadowElevation = 2.dp
+        shadowElevation = 2.dp,
+        onClick = { onVerDetalle(promocion.id) }
     ) {
         Column(
             modifier = Modifier

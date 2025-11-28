@@ -26,7 +26,7 @@ data class PromoState(
 )
 
 class PromoViewModel {
-    private val promoRepository = PromoRepository(ApiClient.router)
+    val repository = PromoRepository(ApiClient.router) // Cambiado a público para acceso desde la Screen
     private val homeRepository = HomeRepository(ApiClient.router)
 
     var state by mutableStateOf(PromoState())
@@ -133,7 +133,7 @@ class PromoViewModel {
                 state = state.copy(isRefreshing = true, error = null)
             }
 
-            promoRepository.getPromociones()
+            repository.getPromociones()
                 .onSuccess { response ->
                     if (response.success && response.data != null) {
                         cacheDisponibles.set(response)
@@ -207,7 +207,7 @@ class PromoViewModel {
                     state = state.copy(isRefreshing = true, error = null)
                 }
 
-                promoRepository.getPromocionesUsuario(userId)
+                repository.getPromocionesUsuario(userId)
                     .onSuccess { response ->
                         if (response.success && response.data != null) {
                             cacheCanjeadas.set(response)
@@ -270,7 +270,7 @@ class PromoViewModel {
         state = state.copy(isLoading = true, error = null)
 
         CoroutineScope(Dispatchers.Default).launch {
-            promoRepository.canjearPromocion(promocionId)
+            repository.canjearPromocion(promocionId)
                 .onSuccess { response ->
                     if (response.success) {
                         state = state.copy(

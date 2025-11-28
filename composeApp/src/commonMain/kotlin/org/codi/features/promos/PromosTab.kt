@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import org.codi.features.promos.components.PromocionItem
@@ -48,6 +50,7 @@ object PromosTab : Tab {
 @Composable
 fun PromosScreen(viewModel: PromoViewModel) {
     val state = viewModel.state
+    val navigator = LocalNavigator.currentOrThrow
     var selectedPromocionId by remember { mutableStateOf<String?>(null) }
 
     // Auto-ocultar el error después de 5 segundos
@@ -118,7 +121,13 @@ fun PromosScreen(viewModel: PromoViewModel) {
 
             // Contenido según la pestaña seleccionada
             when (viewModel.currentTab) {
-                0 -> PromocionesDisponiblesContent(viewModel, state)
+                0 -> PromocionesDisponiblesContent(
+                    viewModel = viewModel,
+                    state = state,
+                    onVerDetalle = { promocionId ->
+                        navigator.push(PromoDetailScreen(promocionId))
+                    }
+                )
                 1 -> PromocionesCanjeadasContent(
                     state = state,
                     onVerDetalle = { promocionId ->
@@ -171,7 +180,8 @@ fun PromosScreen(viewModel: PromoViewModel) {
 @Composable
 private fun PromocionesDisponiblesContent(
     viewModel: PromoViewModel,
-    state: PromoState
+    state: PromoState,
+    onVerDetalle: (String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize()
@@ -229,7 +239,8 @@ private fun PromocionesDisponiblesContent(
                 puntosUsuario = state.puntosVerdes,
                 onCanjear = { promocionId ->
                     viewModel.canjearPromocion(promocionId)
-                }
+                },
+                onVerDetalle = onVerDetalle
             )
         }
 
