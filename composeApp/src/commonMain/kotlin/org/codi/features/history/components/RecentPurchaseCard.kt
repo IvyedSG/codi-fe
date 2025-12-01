@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.codi.data.api.models.RecentPurchase
+import org.codi.common.components.StoreLogo
 import org.codi.data.models.BoletaTipoAmbiental
 import org.codi.features.receipt.ReceiptDetailScreen
 import org.codi.theme.CodiThemeValues
@@ -74,23 +75,13 @@ fun RecentPurchaseCard(purchase: RecentPurchase) {
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Logo de la tienda (inicial)
-                    Surface(
+                    // Logo de la tienda remoto con fallback a inicial
+                    StoreLogo(
+                        logoUrl = purchase.logoTienda,
+                        storeName = purchase.nombreTienda,
                         modifier = Modifier.size(40.dp),
-                        shape = CircleShape,
-                        color = PrimaryGreen.copy(alpha = 0.15f)
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Text(
-                                text = purchase.nombreTienda.firstOrNull()?.uppercase() ?: "T",
-                                style = CodiThemeValues.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = PrimaryGreen
-                            )
-                        }
-                    }
+                        size = 40.dp
+                    )
 
                     Column(
                         verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -212,4 +203,3 @@ private fun getMonthName(month: Int): String {
         else -> ""
     }
 }
-

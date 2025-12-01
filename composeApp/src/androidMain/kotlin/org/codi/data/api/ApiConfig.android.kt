@@ -11,5 +11,5 @@ actual val BASE_API_URL: String = if (Build.FINGERPRINT.contains("generic")) {
     "http://10.0.2.2:8000"
 } else {
     // 📱 Forzar uso del emulador también en dispositivos físicos (evitamos usar la IP del PC)
-    "http://192.168.1.34:8000"
+    "http://10.0.2.2:8000"
 }

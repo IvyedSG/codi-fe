@@ -24,6 +24,7 @@ import org.codi.theme.PrimaryGreen
 import org.codi.theme.SecondaryGreen
 import org.codi.utils.formatDecimal
 import org.codi.data.api.models.RecommendationsResponse
+import org.codi.common.components.StoreLogo
 
 data class ReceiptDetailScreen(
     val receiptId: String,
@@ -258,15 +259,28 @@ fun ReceiptCard(boleta: org.codi.data.api.models.BoletaDetalle) {
             modifier = Modifier.padding(24.dp)
         ) {
             // Nombre del comercio
-            Text(
-                text = boleta.nombreTienda.uppercase(),
-                style = CodiThemeValues.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Black
-                ),
-                color = CodiThemeValues.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Logo y nombre del comercio
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                StoreLogo(
+                    logoUrl = boleta.logoTienda,
+                    storeName = boleta.nombreTienda,
+                    modifier = Modifier.size(56.dp),
+                    size = 56.dp
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = boleta.nombreTienda.uppercase(),
+                    style = CodiThemeValues.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Black
+                    ),
+                    color = CodiThemeValues.colorScheme.onBackground,
+                    textAlign = TextAlign.Center
+                )
+            }
 
             Spacer(modifier = Modifier.height(10.dp))
 

@@ -18,6 +18,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.codi.data.api.models.LastReceipt
 import org.codi.features.receipt.ReceiptDetailScreen
 import org.codi.theme.CodiThemeValues
+import org.codi.common.components.StoreLogo
 
 @Composable
 fun LastReceiptCard(lastReceipt: LastReceipt) {
@@ -123,20 +124,13 @@ fun LastReceiptCard(lastReceipt: LastReceipt) {
                     }
                 }
 
-                // Logo placeholder con inicial de la tienda
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .background(CodiThemeValues.colorScheme.surface),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = lastReceipt.nombreTienda.firstOrNull()?.uppercase() ?: "T",
-                        style = CodiThemeValues.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = CodiThemeValues.colorScheme.onBackground
-                    )
-                }
+                // Logo de la tienda remoto con fallback a inicial
+                StoreLogo(
+                    logoUrl = lastReceipt.logoTienda,
+                    storeName = lastReceipt.nombreTienda,
+                    modifier = Modifier.size(64.dp),
+                    size = 64.dp
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -212,4 +206,3 @@ private fun getMonthName(month: Int): String {
         else -> ""
     }
 }
-

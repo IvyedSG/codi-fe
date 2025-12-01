@@ -58,6 +58,8 @@ kotlin {
             dependencies {
                 implementation(compose.preview)
                 implementation(libs.androidx.activity.compose)
+                // Coil para carga de imágenes en Compose (Android)
+                implementation("io.coil-kt:coil-compose:2.4.0")
                 // Ktor Android Engine
                 implementation("io.ktor:ktor-client-android:2.3.12")
                 // Google Sign-In
@@ -111,8 +113,8 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
-        create("release") {
-            // Release usa el mismo keystore para mantener consistencia
+        // Registrar el signing config de release explícitamente para evitar problemas de inferencia
+        register("release") {
             storeFile = file("../debug.keystore")
             storePassword = "android"
             keyAlias = "androiddebugkey"
