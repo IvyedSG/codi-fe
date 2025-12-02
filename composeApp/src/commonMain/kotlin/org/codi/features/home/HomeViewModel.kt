@@ -27,6 +27,13 @@ class HomeViewModel {
     var state by mutableStateOf<HomeState>(HomeState.Loading)
         private set
 
+    // Estados para mensajes de feedback
+    var successMessage = mutableStateOf<String?>(null)
+        private set
+
+    var errorMessage = mutableStateOf<String?>(null)
+        private set
+
     private val repository = HomeRepository(ApiClient.router)
     private val cache = CacheManager<HomeResponse>()
 
@@ -42,6 +49,7 @@ class HomeViewModel {
                 val userId = TokenStorage.getUserId()
                 if (userId.isNullOrBlank()) {
                     state = HomeState.Error("Usuario no autenticado")
+                    errorMessage.value = "Sesión expirada. Por favor, inicia sesión nuevamente."
                     return@launch
                 }
 
@@ -93,8 +101,15 @@ class HomeViewModel {
                         isEmpty = isEmpty,
                         isRefreshing = false
                     )
+
+                    // Mostrar mensaje de éxito solo si fue un refresh manual
+                    if (forceRefresh) {
+                        successMessage.value = "✓ Datos actualizados"
+                    }
                 } else {
-                    state = HomeState.Error(response.error ?: response.message.takeIf { it.isNotBlank() } ?: "Error al cargar los datos de inicio")
+                    val errorMsg = response.error ?: response.message.takeIf { it.isNotBlank() } ?: "Error al cargar los datos de inicio"
+                    state = HomeState.Error(errorMsg)
+                    errorMessage.value = errorMsg
                 }
             } catch (e: Exception) {
                 // Si hay datos en caché, mostrarlos aunque haya error
@@ -111,8 +126,17 @@ class HomeViewModel {
                         isEmpty = isEmpty,
                         isRefreshing = false
                     )
+                    errorMessage.value = "No se pudo actualizar. Mostrando datos guardados."
                 } else {
-                    state = HomeState.Error(e.message ?: "Error desconocido")
+                    val errorMsg = when {
+                        e.message?.contains("network", ignoreCase = true) == true ->
+                            "Error de conexión. Verifica tu internet."
+                        e.message?.contains("timeout", ignoreCase = true) == true ->
+                            "La operación tardó demasiado. Inténtalo de nuevo."
+                        else -> e.message ?: "Error de conexión. Verifica tu conexión a internet."
+                    }
+                    state = HomeState.Error(errorMsg)
+                    errorMessage.value = errorMsg
                 }
             }
         }
@@ -142,6 +166,14 @@ class HomeViewModel {
                 // Silenciosamente ignorar errores en refresh de fondo
             }
         }
+    }
+
+    /**
+     * Limpia los mensajes de éxito y error
+     */
+    fun clearMessages() {
+        successMessage.value = null
+        errorMessage.value = null
     }
 
     /**

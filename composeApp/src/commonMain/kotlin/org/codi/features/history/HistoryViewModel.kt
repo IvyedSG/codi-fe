@@ -26,6 +26,13 @@ class HistoryViewModel {
     var state by mutableStateOf<HistoryState>(HistoryState.Loading)
         private set
 
+    // Estados para mensajes de feedback
+    var successMessage = mutableStateOf<String?>(null)
+        private set
+
+    var errorMessage = mutableStateOf<String?>(null)
+        private set
+
     private val repository = HistoryRepository(ApiClient.router)
     private val cache = CacheManager<HistoryResponse>()
 
@@ -41,6 +48,7 @@ class HistoryViewModel {
                 val userId = TokenStorage.getUserId()
                 if (userId.isNullOrBlank()) {
                     state = HistoryState.Error("Usuario no autenticado")
+                    errorMessage.value = "Sesión expirada. Por favor, inicia sesión nuevamente."
                     return@launch
                 }
 
@@ -80,8 +88,15 @@ class HistoryViewModel {
                         history = response,
                         isRefreshing = false
                     )
+
+                    // Mostrar mensaje de éxito solo si fue un refresh manual
+                    if (forceRefresh) {
+                        successMessage.value = "✓ Historial actualizado"
+                    }
                 } else {
-                    state = HistoryState.Error(response.error ?: response.message.takeIf { it.isNotBlank() } ?: "Error al cargar el historial")
+                    val errorMsg = response.error ?: response.message.takeIf { it.isNotBlank() } ?: "Error al cargar el historial"
+                    state = HistoryState.Error(errorMsg)
+                    errorMessage.value = errorMsg
                 }
             } catch (e: Exception) {
                 // Si hay datos en caché, mostrarlos aunque haya error
@@ -91,8 +106,17 @@ class HistoryViewModel {
                         history = cachedData,
                         isRefreshing = false
                     )
+                    errorMessage.value = "No se pudo actualizar. Mostrando datos guardados."
                 } else {
-                    state = HistoryState.Error(e.message ?: "Error desconocido")
+                    val errorMsg = when {
+                        e.message?.contains("network", ignoreCase = true) == true ->
+                            "Error de conexión. Verifica tu internet."
+                        e.message?.contains("timeout", ignoreCase = true) == true ->
+                            "La operación tardó demasiado. Inténtalo de nuevo."
+                        else -> e.message ?: "Error de conexión. Verifica tu conexión a internet."
+                    }
+                    state = HistoryState.Error(errorMsg)
+                    errorMessage.value = errorMsg
                 }
             }
         }
@@ -116,6 +140,14 @@ class HistoryViewModel {
                 // Silenciosamente ignorar errores en refresh de fondo
             }
         }
+    }
+
+    /**
+     * Limpia los mensajes de éxito y error
+     */
+    fun clearMessages() {
+        successMessage.value = null
+        errorMessage.value = null
     }
 
     /**

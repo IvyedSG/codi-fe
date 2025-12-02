@@ -14,61 +14,28 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import kotlinx.coroutines.launch
-import org.codi.data.api.ApiClient
 import org.codi.data.api.models.Promocion
-import org.codi.data.storage.TokenStorage
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.SecondaryGreen
 
 @Composable
 fun PromoDetailDialog(
-    promocionId: String,
+    promocion: Promocion,
     onDismiss: () -> Unit
 ) {
-    var isLoading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var promocion by remember { mutableStateOf<Promocion?>(null) }
-    val scope = rememberCoroutineScope()
-
-    // Cargar detalle al abrir el diálogo
-    LaunchedEffect(promocionId) {
-        scope.launch {
-            try {
-                val userId = TokenStorage.getUserId()
-                if (userId.isNullOrBlank()) {
-                    error = "Usuario no autenticado"
-                    isLoading = false
-                    return@launch
-                }
-
-                val response = ApiClient.router.getPromocionDetalle(promocionId, userId)
-                if (response.success && response.data != null) {
-                    promocion = response.data
-                } else {
-                    error = response.error ?: "No se pudo cargar el detalle"
-                }
-            } catch (e: Exception) {
-                error = e.message ?: "Error al cargar el detalle"
-            } finally {
-                isLoading = false
-            }
-        }
-    }
-
     Dialog(onDismissRequest = onDismiss) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White,
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color.White,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(24.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp)
-                ) {
                 // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -92,40 +59,7 @@ fun PromoDetailDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Contenido
-                when {
-                    isLoading -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = SecondaryGreen)
-                        }
-                    }
-                    error != null -> {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Error,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Text(
-                                text = error ?: "Error desconocido",
-                                style = CodiThemeValues.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                    promocion != null -> {
-                        PromoDetailContent(promocion = promocion!!)
-                    }
-                }
+                PromoDetailContent(promocion = promocion)
 
                 Spacer(modifier = Modifier.height(16.dp))
 

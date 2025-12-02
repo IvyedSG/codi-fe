@@ -3,133 +3,80 @@ package org.codi.features.promos
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Store
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.codi.data.storage.TokenStorage
+import org.codi.data.api.models.Promocion
 import org.codi.theme.CodiThemeValues
-import org.codi.theme.PrimaryGreen
 import org.codi.theme.SecondaryGreen
-import org.codi.ui.ViewModelStore
 
-data class PromoDetailScreen(val promoId: String) : Screen {
-    @Composable
-    override fun Content() {
-        val navigator = LocalNavigator.currentOrThrow
-        val promoViewModel = ViewModelStore.getPromoViewModel()
-        val scope = rememberCoroutineScope()
-
-        var promoDetail by remember { mutableStateOf<org.codi.data.api.models.Promocion?>(null) }
-        var isLoading by remember { mutableStateOf(true) }
-        var errorMessage by remember { mutableStateOf<String?>(null) }
-
-        LaunchedEffect(promoId) {
-            scope.launch {
-                isLoading = true
-                try {
-                    val userId = TokenStorage.getUserId() ?: ""
-                    val result = promoViewModel.repository.getPromocionDetalle(promoId, userId)
-                    result.fold(
-                        onSuccess = { response ->
-                            promoDetail = response.data
-                            isLoading = false
-                        },
-                        onFailure = { error ->
-                            errorMessage = error.message ?: "Error al cargar el detalle"
-                            isLoading = false
-                        }
-                    )
-                } catch (e: Exception) {
-                    errorMessage = e.message ?: "Error desconocido"
-                    isLoading = false
-                }
-            }
-        }
-
-        when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = SecondaryGreen)
-                }
-            }
-            errorMessage != null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            text = errorMessage ?: "Error",
-                            color = Color.Red,
-                            style = CodiThemeValues.typography.bodyLarge
-                        )
-                        Button(
-                            onClick = { navigator.pop() },
-                            colors = ButtonDefaults.buttonColors(containerColor = SecondaryGreen)
-                        ) {
-                            Text("Volver")
-                        }
-                    }
-                }
-            }
-            promoDetail != null -> {
-                PromoDetailContent(
-                    promo = promoDetail!!,
-                    onNavigateBack = { navigator.pop() },
-                    onShare = { /* Compartir promo */ },
-                    onCanjear = {
-                        scope.launch {
-                            promoViewModel.canjearPromocion(promoId)
-                        }
-                    }
-                )
-            }
-        }
+/**
+ * Vista de detalle de promoción en pantalla completa como Dialog
+ */
+@Composable
+fun PromoDetailFullScreen(
+    promocion: Promocion,
+    onDismiss: () -> Unit,
+    viewModel: PromoViewModel? = null
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        PromoDetailContent(
+            promocion = promocion,
+            onNavigateBack = onDismiss,
+            viewModel = viewModel
+        )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PromoDetailContent(
-    promo: org.codi.data.api.models.Promocion,
+private fun PromoDetailContent(
+    promocion: Promocion,
     onNavigateBack: () -> Unit,
-    onShare: () -> Unit,
-    onCanjear: () -> Unit
+    viewModel: PromoViewModel? = null
 ) {
-    var quantity by remember { mutableStateOf(1) }
+    val scrollState = rememberScrollState()
+    var showCanjearDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    var isProcessing by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
+    // Observar cambios en el estado del ViewModel para mostrar errores o éxito
+    LaunchedEffect(viewModel?.state?.error) {
+        viewModel?.state?.error?.let { errorMsg ->
+            snackbarHostState.showSnackbar(
+                message = errorMsg,
+                duration = SnackbarDuration.Long
+            )
+            viewModel.clearError()
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "Detalle de tu promo",
+                        text = "Detalle de promoción",
                         style = CodiThemeValues.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold
                         )
@@ -140,101 +87,71 @@ fun PromoDetailContent(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver",
-                            tint = Color.White
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onShare) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = "Compartir",
-                            tint = Color.White
+                            tint = CodiThemeValues.colorScheme.onBackground
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = PrimaryGreen,
-                    titleContentColor = Color.White
+                    containerColor = CodiThemeValues.colorScheme.background,
+                    titleContentColor = CodiThemeValues.colorScheme.onBackground
                 )
             )
         },
         bottomBar = {
-            // Barra inferior con cantidad y botón de canjear
+            // Barra inferior con botón de acción
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = Color.White,
                 shadowElevation = 8.dp
             ) {
-                Row(
+                Button(
+                    onClick = {
+                        if (viewModel != null && !isProcessing) {
+                            showCanjearDialog = true
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(16.dp)
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = SecondaryGreen
+                    ),
+                    shape = RoundedCornerShape(28.dp),
+                    enabled = promocion.activa && promocion.disponible != false && viewModel != null && !isProcessing
                 ) {
-                    // Selector de cantidad
-                    Row(
-                        modifier = Modifier
-                            .weight(0.35f)
-                            .height(48.dp)
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(CodiThemeValues.colorScheme.background),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(
-                            onClick = { if (quantity > 1) quantity-- },
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Text(
-                                text = "−",
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (quantity > 1) CodiThemeValues.colorScheme.onBackground else Color.Gray
-                            )
-                        }
-
-                        Text(
-                            text = quantity.toString(),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = CodiThemeValues.colorScheme.onBackground
+                    if (isProcessing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
                         )
-
-                        IconButton(
-                            onClick = { quantity++ },
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Text(
-                                text = "+",
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = CodiThemeValues.colorScheme.onBackground
-                            )
-                        }
-                    }
-
-                    // Botón de canjear
-                    Button(
-                        onClick = onCanjear,
-                        modifier = Modifier
-                            .weight(0.65f)
-                            .height(48.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = SecondaryGreen
-                        ),
-                        shape = RoundedCornerShape(24.dp),
-                        enabled = promo.activa && promo.disponible != false
-                    ) {
+                    } else {
                         Text(
-                            text = if (promo.disponible == false) "Ya Canjeada" else "Canjear Ahora",
-                            fontSize = 16.sp,
+                            text = if (promocion.disponible == false) "Ya Canjeada" else "Usar Promoción",
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                     }
                 }
+            }
+        },
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(16.dp)
+            ) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = if (data.visuals.message.contains("éxito", ignoreCase = true)) {
+                        Color(0xFF4CAF50)
+                    } else {
+                        MaterialTheme.colorScheme.errorContainer
+                    },
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(12.dp)
+                )
             }
         }
     ) { padding ->
@@ -243,249 +160,475 @@ fun PromoDetailContent(
                 .fillMaxSize()
                 .background(CodiThemeValues.colorScheme.background)
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
         ) {
-            // Imagen principal / Placeholder
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(240.dp)
-                    .background(SecondaryGreen.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                // Logo de la tienda
-                promo.tienda?.let { tienda ->
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Surface(
-                            modifier = Modifier.size(80.dp),
-                            shape = CircleShape,
-                            color = Color.White,
-                            shadowElevation = 4.dp
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Store,
-                                    contentDescription = null,
-                                    tint = PrimaryGreen,
-                                    modifier = Modifier.size(40.dp)
-                                )
-                            }
-                        }
-                        Text(
-                            text = tienda.nombre,
-                            style = CodiThemeValues.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = PrimaryGreen
-                        )
-                    }
-                }
-            }
+            // Imagen/Banner principal
+            PromoImageBanner(promocion = promocion)
 
-            // Badge "Compra ahora" y "Más promos"
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .background(Color.White),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Surface(
-                        color = if (promo.activa) SecondaryGreen.copy(alpha = 0.2f) else Color.Gray.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = if (promo.activa) "Disponible" else "No disponible",
-                            style = CodiThemeValues.typography.labelLarge.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = if (promo.activa) PrimaryGreen else Color.Gray,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
-                    }
-                }
-
-                // Badge tipo de promoción
-                Surface(
-                    color = SecondaryGreen.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = promo.tipoPromocion,
-                        style = CodiThemeValues.typography.labelMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = PrimaryGreen,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-            }
-
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.1f)
-            )
-
-            // Información del producto
+            // Contenido principal
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Vendido por
-                promo.tienda?.let { tienda ->
-                    Text(
-                        text = "Vendido por ${tienda.nombre}",
-                        style = CodiThemeValues.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Medium
-                        ),
-                        color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.6f)
-                    )
-                }
+                // Tienda y etiqueta
+                PromoHeader(promocion = promocion)
 
-                // Título
+                // Título de la promoción
                 Text(
-                    text = promo.titulo,
-                    style = CodiThemeValues.typography.titleLarge.copy(
+                    text = promocion.titulo,
+                    style = CodiThemeValues.typography.headlineSmall.copy(
                         fontWeight = FontWeight.Bold
                     ),
-                    color = CodiThemeValues.colorScheme.onBackground,
-                    lineHeight = 28.sp
+                    color = CodiThemeValues.colorScheme.onBackground
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
                 // Descripción
-                promo.descripcion?.let { desc ->
+                promocion.descripcion?.let { desc ->
                     Text(
                         text = desc,
-                        style = CodiThemeValues.typography.bodyMedium,
-                        color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.7f),
-                        lineHeight = 22.sp
+                        style = CodiThemeValues.typography.bodyLarge,
+                        color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.8f)
                     )
-
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // Información adicional
-                promo.boletasRequeridas?.let { boletas ->
-                    if (boletas > 0) {
-                        DetailInfoItem(
-                            label = "Boletas requeridas:",
-                            value = "$boletas boletas"
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.1f)
+                )
+
+                // Información de vigencia
+                PromoVigencia(promocion = promocion)
+
+                // Boletas requeridas
+                if (promocion.boletasRequeridas > 0) {
+                    PromoRequirement(promocion = promocion)
+                }
+
+                // Fecha de uso (si ya fue canjeada)
+                promocion.fechaUso?.let { fecha ->
+                    PromoUsageDate(fecha = fecha)
+                }
+
+                // Estado
+                PromoStatus(promocion = promocion)
+            }
+        }
+    }
+
+    // Diálogo de confirmación para canjear
+    if (showCanjearDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!isProcessing) {
+                    showCanjearDialog = false
+                }
+            },
+            title = {
+                Text(
+                    text = "Confirmar canje",
+                    style = CodiThemeValues.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = Color.Black
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "¿Deseas canjear esta promoción?",
+                        style = CodiThemeValues.typography.bodyMedium,
+                        color = Color.Black
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = promocion.titulo,
+                        style = CodiThemeValues.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = SecondaryGreen
+                    )
+                    if (promocion.boletasRequeridas > 0) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Se descontarán ${promocion.boletasRequeridas} punto(s) verde(s)",
+                            style = CodiThemeValues.typography.bodySmall,
+                            color = Color.Gray
                         )
                     }
                 }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            isProcessing = true
+                            showCanjearDialog = false
 
-                promo.validezInicio?.let { inicio ->
-                    DetailInfoItem(
-                        label = "Vigencia de la promo:",
-                        value = "Desde ${formatFecha(inicio)}"
-                    )
-                }
+                            try {
+                                viewModel?.canjearPromocion(promocion.id)
 
-                promo.validezFin?.let { fin ->
-                    DetailInfoItem(
-                        label = "Válida hasta:",
-                        value = formatFecha(fin)
-                    )
-                }
+                                // Esperar un momento para que se procese
+                                delay(500)
 
-                // Estado de disponibilidad
-                if (promo.disponible == false) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Surface(
-                        color = PrimaryGreen.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "✓",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = PrimaryGreen
-                            )
-                            Column {
-                                Text(
-                                    text = "Ya canjeaste esta promoción",
-                                    style = CodiThemeValues.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    color = PrimaryGreen
-                                )
-                                promo.fechaUso?.let { fecha ->
-                                    Text(
-                                        text = "Fecha de canje: ${formatFecha(fecha)}",
-                                        style = CodiThemeValues.typography.bodySmall,
-                                        color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.6f)
+                                // Verificar si hay error en el estado
+                                if (viewModel?.state?.error == null) {
+                                    snackbarHostState.showSnackbar(
+                                        message = "¡Promoción canjeada con éxito!",
+                                        duration = SnackbarDuration.Short
                                     )
+                                    delay(1500)
+                                    onNavigateBack()
                                 }
+                            } catch (e: Exception) {
+                                snackbarHostState.showSnackbar(
+                                    message = "Error al canjear: ${e.message ?: "Error desconocido"}",
+                                    duration = SnackbarDuration.Long
+                                )
+                            } finally {
+                                isProcessing = false
                             }
                         }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = SecondaryGreen),
+                    enabled = !isProcessing
+                ) {
+                    if (isProcessing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Confirmar", color = Color.White)
                     }
                 }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showCanjearDialog = false },
+                    enabled = !isProcessing
+                ) {
+                    Text("Cancelar", color = Color.Gray)
+                }
+            }
+        )
+    }
+}
 
-                Spacer(modifier = Modifier.height(16.dp))
+@Composable
+private fun PromoImageBanner(promocion: Promocion) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(240.dp)
+            .background(
+                SecondaryGreen.copy(alpha = 0.1f)
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        // Logo de la tienda en el centro
+        promocion.tienda?.let { tienda ->
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Logo de tienda desde URL
+                org.codi.common.components.StoreLogo(
+                    logoUrl = tienda.urlLogo,
+                    storeName = tienda.nombre,
+                    modifier = Modifier.size(100.dp),
+                    size = 100.dp
+                )
+
+                Text(
+                    text = tienda.nombre,
+                    style = CodiThemeValues.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = Color.Black
+                )
+            }
+        } ?: run {
+            // Si no hay tienda, mostrar un ícono genérico
+            Icon(
+                imageVector = Icons.Default.LocalOffer,
+                contentDescription = null,
+                tint = Color.Black.copy(alpha = 0.6f),
+                modifier = Modifier.size(80.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun PromoHeader(promocion: Promocion) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Badge de tipo de promoción
+        Surface(
+            color = Color.White,
+            shape = RoundedCornerShape(16.dp),
+            shadowElevation = 2.dp
+        ) {
+            Text(
+                text = promocion.tipoPromocion,
+                style = CodiThemeValues.typography.labelLarge.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = Color.Black,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
+
+        // Badge de "Canjeada" si aplica
+        if (promocion.disponible == false) {
+            Surface(
+                color = Color(0xFF4CAF50).copy(alpha = 0.2f),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = Color(0xFF4CAF50),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "Canjeada",
+                        style = CodiThemeValues.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = Color(0xFF4CAF50)
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun DetailInfoItem(
-    label: String,
-    value: String
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+private fun PromoVigencia(promocion: Promocion) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.White,
+        shape = RoundedCornerShape(12.dp),
+        shadowElevation = 2.dp
     ) {
-        Text(
-            text = label,
-            style = CodiThemeValues.typography.bodyMedium.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            color = CodiThemeValues.colorScheme.onBackground
-        )
-        Text(
-            text = value,
-            style = CodiThemeValues.typography.bodyMedium,
-            color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.7f)
-        )
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(
+                imageVector = Icons.Default.DateRange,
+                contentDescription = null,
+                tint = SecondaryGreen,
+                modifier = Modifier.size(24.dp)
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = "Vigencia de la promoción",
+                    style = CodiThemeValues.typography.labelLarge.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = Color.Black
+                )
+                if (promocion.validezInicio != null && promocion.validezFin != null) {
+                    Text(
+                        text = "Del ${formatearFecha(promocion.validezInicio)} al ${formatearFecha(promocion.validezFin)}",
+                        style = CodiThemeValues.typography.bodyMedium,
+                        color = Color.Black.copy(alpha = 0.7f)
+                    )
+                } else {
+                    Text(
+                        text = "Vigencia no especificada",
+                        style = CodiThemeValues.typography.bodyMedium,
+                        color = Color.Black.copy(alpha = 0.5f)
+                    )
+                }
+            }
+        }
     }
 }
 
-private fun formatFecha(isoString: String): String {
+@Composable
+private fun PromoRequirement(promocion: Promocion) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.White,
+        shape = RoundedCornerShape(12.dp),
+        shadowElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(
+                imageVector = Icons.Default.Receipt,
+                contentDescription = null,
+                tint = SecondaryGreen,
+                modifier = Modifier.size(24.dp)
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = "Boletas requeridas",
+                    style = CodiThemeValues.typography.labelLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = Color.Black
+                )
+                Text(
+                    text = "${promocion.boletasRequeridas} boleta${if (promocion.boletasRequeridas > 1) "s" else ""}",
+                    style = CodiThemeValues.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = Color.Black
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PromoUsageDate(fecha: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color(0xFF4CAF50).copy(alpha = 0.1f),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = Color(0xFF4CAF50),
+                modifier = Modifier.size(24.dp)
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = "Fecha de canje",
+                    style = CodiThemeValues.typography.labelLarge.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = CodiThemeValues.colorScheme.onBackground
+                )
+                Text(
+                    text = formatearFechaCompleta(fecha),
+                    style = CodiThemeValues.typography.bodyMedium,
+                    color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PromoStatus(promocion: Promocion) {
+    val (statusText, statusColor, statusIcon) = when {
+        promocion.disponible == false -> Triple(
+            "Esta promoción ya ha sido canjeada",
+            Color(0xFF4CAF50),
+            Icons.Default.CheckCircle
+        )
+        !promocion.activa -> Triple(
+            "Esta promoción ya no está activa",
+            Color(0xFFF44336),
+            Icons.Default.Cancel
+        )
+        else -> Triple(
+            "Promoción disponible para canjear",
+            SecondaryGreen,
+            Icons.Default.CheckCircle
+        )
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = statusColor.copy(alpha = 0.1f),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = statusIcon,
+                contentDescription = null,
+                tint = statusColor,
+                modifier = Modifier.size(24.dp)
+            )
+            Text(
+                text = statusText,
+                style = CodiThemeValues.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = Color.Black
+            )
+        }
+    }
+}
+
+// Funciones de utilidad para formatear fechas
+private fun formatearFecha(fechaISO: String): String {
     return try {
-        // Formato simple para mostrar la fecha
-        val parts = isoString.split("T")[0].split("-")
+        val parts = fechaISO.split("T")[0].split("-")
         if (parts.size == 3) {
             "${parts[2]}/${parts[1]}/${parts[0]}"
         } else {
-            isoString
+            fechaISO.split("T").firstOrNull() ?: "Fecha no disponible"
         }
-    } catch (e: Exception) {
-        isoString
+    } catch (_: Exception) {
+        "Fecha no disponible"
+    }
+}
+
+private fun formatearFechaCompleta(fechaISO: String): String {
+    return try {
+        val parts = fechaISO.split("T")[0].split("-")
+        if (parts.size == 3) {
+            val day = parts[2]
+            val month = obtenerNombreMes(parts[1].toIntOrNull() ?: 1)
+            val year = parts[0]
+            "$day de $month de $year"
+        } else {
+            fechaISO.split("T").firstOrNull() ?: "Fecha no disponible"
+        }
+    } catch (_: Exception) {
+        "Fecha no disponible"
+    }
+}
+
+private fun obtenerNombreMes(mes: Int): String {
+    return when (mes) {
+        1 -> "Enero"
+        2 -> "Febrero"
+        3 -> "Marzo"
+        4 -> "Abril"
+        5 -> "Mayo"
+        6 -> "Junio"
+        7 -> "Julio"
+        8 -> "Agosto"
+        9 -> "Septiembre"
+        10 -> "Octubre"
+        11 -> "Noviembre"
+        12 -> "Diciembre"
+        else -> "Desconocido"
     }
 }
 
