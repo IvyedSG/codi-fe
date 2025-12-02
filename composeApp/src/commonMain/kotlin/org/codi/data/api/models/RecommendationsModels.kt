@@ -15,6 +15,8 @@ data class RecommendationProductRecommended(
     val marca: String? = null,
     val categoria: String? = null,
     val tienda: String? = null,
+    val logoTienda: String? = null,
+    val precio: Double? = null,
     val co2: Double
 )
 

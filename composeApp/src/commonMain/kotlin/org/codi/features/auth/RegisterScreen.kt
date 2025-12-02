@@ -6,11 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,12 +29,9 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.codi.data.api.ApiClient
 import org.codi.data.api.ApiException
 import io.ktor.http.HttpStatusCode
-import org.codi.data.api.models.RegisterRequest
-import org.codi.data.api.models.DniResponse
+import org.codi.data.api.models.RegisterByDniRequest
 import org.codi.data.storage.TokenStorage
 import org.codi.ui.ToastManager
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.ui.window.Dialog
 
 object RegisterScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -46,8 +39,7 @@ object RegisterScreen : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
 
-        var nombre by remember { mutableStateOf("") }
-        var apellido by remember { mutableStateOf("") }
+        var dniValue by remember { mutableStateOf("") }
         var email by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
         var isPasswordVisible by remember { mutableStateOf(false) }
@@ -56,17 +48,8 @@ object RegisterScreen : Screen {
         val scope = rememberCoroutineScope()
         val snackbarHostState = remember { SnackbarHostState() }
 
-        // Estado para dialogo DNI (movido arriba para ser accesible desde la lambda de registro)
-        var showDniDialog by remember { mutableStateOf(false) }
-        var dniValue by remember { mutableStateOf("") }
-        var dniLoading by remember { mutableStateOf(false) }
-        var dniResult by remember { mutableStateOf<DniResponse?>(null) }
-
-        val buttonEnabled = !isLoading &&
-                           nombre.isNotBlank() &&
-                           apellido.isNotBlank() &&
-                           email.isNotBlank() &&
-                           password.isNotBlank()
+        // El botón se habilita si DNI(8), email y password están completos
+        val buttonEnabled = !isLoading && dniValue.length == 8 && email.isNotBlank() && password.isNotBlank()
 
         Scaffold(
             // Usar SnackbarHost personalizado para asegurar contraste y visibilidad del texto
@@ -121,65 +104,37 @@ object RegisterScreen : Screen {
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    // Campo de Nombre
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Campo DNI
                     OutlinedTextField(
-                        value = nombre,
-                        onValueChange = { nombre = it },
-                        placeholder = {
-                            Text(
-                                "Nombre",
-                                color = CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
+                        value = dniValue,
+                        onValueChange = { v ->
+                            dniValue = v.filter { it.isDigit() }.take(8)
                         },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Nombre",
-                                tint = CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-                        },
-                        shape = CodiThemeValues.shapes.medium,
+                        label = { Text("DNI") },
+                        placeholder = { Text("Ej: 71844332", color = CodiThemeValues.colorScheme.onSurfaceVariant) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        isError = dniValue.isNotEmpty() && dniValue.length != 8,
+                        supportingText = if (dniValue.isNotEmpty() && dniValue.length != 8) {
+                            { Text("El DNI debe tener 8 dígitos", color = CodiThemeValues.colorScheme.error) }
+                        } else null,
                         colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = CodiThemeValues.colorScheme.surface,
-                            focusedContainerColor = CodiThemeValues.colorScheme.surface,
-                            unfocusedBorderColor = CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.2f),
-                            focusedBorderColor = CodiThemeValues.colorScheme.primary
+                            focusedBorderColor = CodiThemeValues.colorScheme.primary,
+                            unfocusedBorderColor = CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.12f),
+                            focusedLabelColor = CodiThemeValues.colorScheme.primary,
+                            cursorColor = CodiThemeValues.colorScheme.primary,
+                            focusedLeadingIconColor = CodiThemeValues.colorScheme.primary
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Campo de Apellido
-                    OutlinedTextField(
-                        value = apellido,
-                        onValueChange = { apellido = it },
-                        placeholder = {
-                            Text(
-                                "Apellido",
-                                color = CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Apellido",
-                                tint = CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-                        },
-                        shape = CodiThemeValues.shapes.medium,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = CodiThemeValues.colorScheme.surface,
-                            focusedContainerColor = CodiThemeValues.colorScheme.surface,
-                            unfocusedBorderColor = CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.2f),
-                            focusedBorderColor = CodiThemeValues.colorScheme.primary
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Campo de Email
+                    // Email
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
@@ -209,7 +164,7 @@ object RegisterScreen : Screen {
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Campo de Contraseña
+                    // Password
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it },
@@ -252,34 +207,31 @@ object RegisterScreen : Screen {
                     // Botón de Registrarse
                     Button(
                         onClick = {
-                            // Ejecutar llamada al endpoint en coroutine
                             scope.launch {
                                 isLoading = true
                                 try {
-                                    val req = RegisterRequest(
-                                        nombre = nombre,
-                                        apellido = apellido,
+                                    val req = RegisterByDniRequest(
+                                        dni = dniValue,
                                         email = email,
                                         password = password
                                     )
-                                    val resp = ApiClient.router.register(req)
+
+                                    val resp = ApiClient.router.registerByDni(req)
 
                                     if (resp.success && resp.data != null) {
-                                        // Guardar token seguro y reemplazar la pantalla actual
                                         resp.data.token.takeIf { it.isNotBlank() }?.let { token ->
                                             try {
                                                 TokenStorage.saveToken(token)
-                                                // Guardar también el userId
-                                                resp.data.user.id.takeIf { it.isNotBlank() }?.let { userId ->
-                                                    TokenStorage.saveUserId(userId)
+                                                resp.data.user.id.takeIf { it.isNotBlank() }?.let { uid ->
+                                                    TokenStorage.saveUserId(uid)
                                                 }
                                             } catch (_: Throwable) {
-                                                // No bloquear navegación por fallo al guardar
+                                                // ignore save errors
                                             }
                                         }
 
-                                        // En vez de navegar inmediatamente, mostramos el diálogo para asociar DNI
-                                        showDniDialog = true
+                                        // Navegar al home
+                                        navigator.replace(HomeTabNavigator)
                                     } else {
                                         val msg = resp.message.takeIf { it.isNotBlank() }
                                             ?: resp.error.takeIf { it?.isNotBlank() == true }
@@ -288,27 +240,39 @@ object RegisterScreen : Screen {
                                         ToastManager.show(msg)
                                     }
                                 } catch (ae: ApiException) {
-                                    // Log raw body for debugging
-                                    try {
-                                        println("ApiException body=${ae.body}")
-                                    } catch (_: Throwable) {}
-
-                                    // Manejo fino según el status
                                     val bodyText = ae.body?.takeIf { it.isNotBlank() }
                                     val friendly = when (ae.status) {
-                                        HttpStatusCode.BadRequest -> bodyText ?: "Datos inválidos. Revisa los campos."
-                                        HttpStatusCode.Conflict -> bodyText ?: "El correo ya está registrado."
+                                        HttpStatusCode.BadRequest -> {
+                                            // Error de validación - Datos inválidos o formato de DNI incorrecto
+                                            bodyText ?: "El DNI debe tener exactamente 8 dígitos"
+                                        }
+
+                                        HttpStatusCode.NotFound -> {
+                                            // DNI no encontrado en RENIEC
+                                            bodyText ?: "El DNI no se encuentra registrado en RENIEC"
+                                        }
+
+                                        HttpStatusCode.Conflict -> {
+                                            // Correo o DNI ya registrado
+                                            bodyText ?: "El correo electrónico o DNI ya está registrado"
+                                        }
+
+                                        HttpStatusCode.InternalServerError -> {
+                                            // Error del servidor o servicio de RENIEC no disponible
+                                            bodyText ?: "No se pudo validar el DNI en RENIEC. Intenta más tarde"
+                                        }
+
                                         else -> {
-                                            if (ae.status.value >= 500) "Error interno del servidor. Intenta más tarde." else (bodyText ?: "Error en el registro (${ae.status.value})")
+                                            if (ae.status.value >= 500) {
+                                                "Error del servidor. Intenta más tarde"
+                                            } else {
+                                                bodyText ?: "Error en el registro (${ae.status.value})"
+                                            }
                                         }
                                     }
-                                    // Asegurar mensaje no vacío
-                                    val messageToShow = friendly.takeIf { it.isNotBlank() } ?: "Error desconocido"
-                                    ToastManager.show(messageToShow)
+                                    ToastManager.show(friendly)
                                 } catch (t: Throwable) {
-                                    // Error de red / parseo
-                                    val fallback = t.message?.takeIf { it.isNotBlank() } ?: "Error en la conexión"
-                                    ToastManager.show(fallback)
+                                    ToastManager.show(t.message ?: "Error de conexión. Verifica tu internet")
                                 } finally {
                                     isLoading = false
                                 }
@@ -343,7 +307,7 @@ object RegisterScreen : Screen {
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Enlace para ir a login
+                    // Enlace a login
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -365,150 +329,6 @@ object RegisterScreen : Screen {
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))
-                }
-            }
-        }
-
-        // --- DIALOGO para DNI ---
-        if (showDniDialog) {
-            // Dialog personalizado para adaptarlo al theme
-            Dialog(onDismissRequest = { showDniDialog = false }) {
-                Surface(
-                    shape = CodiThemeValues.shapes.medium,
-                    color = CodiThemeValues.colorScheme.surface,
-                    tonalElevation = 8.dp,
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Column(modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp)) {
-
-                        // Header con icono
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = CodiThemeValues.colorScheme.primary,
-                                modifier = Modifier.size(28.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = "Asociar DNI",
-                                style = CodiThemeValues.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
-                                color = CodiThemeValues.colorScheme.onSurface
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            text = "Ingresa tu DNI para confirmar tu identidad. Al completar 8 dígitos se buscará automáticamente.",
-                            style = CodiThemeValues.typography.bodyMedium,
-                            color = CodiThemeValues.colorScheme.onSurfaceVariant
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        OutlinedTextField(
-                            value = dniValue,
-                            onValueChange = { v ->
-                                val clean = v.filter { it.isDigit() }.take(8)
-                                dniValue = clean
-
-                                if (clean.length == 8) {
-                                    dniLoading = true
-                                    dniResult = null
-                                    scope.launch {
-                                        try {
-                                            val resp = ApiClient.router.getUserByDni(clean)
-                                            dniResult = resp
-                                        } catch (t: Throwable) {
-                                            ToastManager.show(t.message ?: "Error al buscar DNI")
-                                        } finally {
-                                            dniLoading = false
-                                        }
-                                    }
-                                } else {
-                                    dniResult = null
-                                }
-                            },
-                            placeholder = { Text("Ej: 98765432", color = CodiThemeValues.colorScheme.onSurfaceVariant) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = CodiThemeValues.colorScheme.primary,
-                                unfocusedBorderColor = CodiThemeValues.colorScheme.onSurface.copy(alpha = 0.12f),
-                                focusedLabelColor = CodiThemeValues.colorScheme.primary,
-                                cursorColor = CodiThemeValues.colorScheme.primary,
-                                focusedLeadingIconColor = CodiThemeValues.colorScheme.primary
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        if (dniLoading) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    color = CodiThemeValues.colorScheme.primary,
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Buscando...", color = CodiThemeValues.colorScheme.onSurface)
-                            }
-                        }
-
-                        dniResult?.let { res ->
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            if (res.success && res.data != null) {
-                                Card(
-                                    colors = CardDefaults.cardColors(containerColor = CodiThemeValues.colorScheme.secondaryContainer),
-                                    shape = CodiThemeValues.shapes.small,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Column(modifier = Modifier.padding(12.dp)) {
-                                        // Forzar color negro para asegurar legibilidad sobre el container
-                                        Text(text = "Nombre: ${res.data.nombre} ${res.data.apellido}", style = CodiThemeValues.typography.bodyLarge, color = Color.Black)
-                                        Text(text = "DNI: ${res.data.dni}", style = CodiThemeValues.typography.bodyMedium, color = Color.Black)
-                                    }
-                                }
-                            } else {
-                                // Mensaje de error/estado del backend
-                                Text(
-                                    text = res.message,
-                                    style = CodiThemeValues.typography.bodyMedium,
-                                    color = CodiThemeValues.colorScheme.error
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(18.dp))
-
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                            TextButton(onClick = { showDniDialog = false }) {
-                                Text("Cancelar", color = CodiThemeValues.colorScheme.onSurfaceVariant)
-                            }
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            val confirmEnabled = dniResult?.success == true && dniResult?.data != null && !dniLoading
-
-                            Button(
-                                onClick = {
-                                    // Confirmar y navegar si hay resultado válido
-                                    showDniDialog = false
-                                    navigator.replace(HomeTabNavigator)
-                                },
-                                enabled = confirmEnabled,
-                                colors = ButtonDefaults.buttonColors(containerColor = CodiThemeValues.colorScheme.primary)
-                            ) {
-                                Text("Confirmar", color = CodiThemeValues.colorScheme.onPrimary)
-                            }
-                        }
-
-                    }
                 }
             }
         }

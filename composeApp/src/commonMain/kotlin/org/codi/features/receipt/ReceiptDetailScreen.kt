@@ -3,6 +3,7 @@ package org.codi.features.receipt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -28,7 +29,7 @@ import org.codi.common.components.StoreLogo
 
 data class ReceiptDetailScreen(
     val receiptId: String,
-    val storeName: String = "TOTTUS",
+    val storeName: String,
     val fromUpload: Boolean = false
 ) : Screen {
 
@@ -81,7 +82,12 @@ data class ReceiptDetailScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             // Card del recibo con datos reales
-                            ReceiptCard(boleta = boleta)
+                            ReceiptCard(
+                                boleta = boleta,
+                                onProductTraceClick = { product ->
+                                    navigator.push(EnvironmentalRangeScreen(product))
+                                }
+                            )
 
                             Spacer(modifier = Modifier.height(16.dp))
 
@@ -248,7 +254,10 @@ data class ReceiptDetailScreen(
 }
 
 @Composable
-fun ReceiptCard(boleta: org.codi.data.api.models.BoletaDetalle) {
+fun ReceiptCard(
+    boleta: org.codi.data.api.models.BoletaDetalle,
+    onProductTraceClick: (org.codi.data.api.models.ProductoBoleta) -> Unit = {}
+) {
     Surface(
         color = Color.White,
         shape = RoundedCornerShape(16.dp),
@@ -315,8 +324,12 @@ fun ReceiptCard(boleta: org.codi.data.api.models.BoletaDetalle) {
             // Headers de tabla
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                // Espacio para el icono
+                Box(modifier = Modifier.width(24.dp))
+
                 Text(
                     text = "DESCRIPCIÓN",
                     style = CodiThemeValues.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
@@ -327,21 +340,24 @@ fun ReceiptCard(boleta: org.codi.data.api.models.BoletaDetalle) {
                     text = "CANT",
                     style = CodiThemeValues.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                     color = CodiThemeValues.colorScheme.onBackground,
-                    modifier = Modifier.weight(0.5f),
+                    modifier = Modifier.width(50.dp),
                     textAlign = TextAlign.Center
                 )
                 Text(
                     text = "PRECIO",
                     style = CodiThemeValues.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                     color = CodiThemeValues.colorScheme.onBackground,
-                    modifier = Modifier.weight(0.7f),
+                    modifier = Modifier.width(60.dp),
                     textAlign = TextAlign.End
                 )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
                 Text(
                     text = "CO₂",
                     style = CodiThemeValues.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                     color = CodiThemeValues.colorScheme.onBackground,
-                    modifier = Modifier.weight(0.6f),
+                    modifier = Modifier.width(55.dp),
                     textAlign = TextAlign.End
                 )
             }
@@ -356,7 +372,9 @@ fun ReceiptCard(boleta: org.codi.data.api.models.BoletaDetalle) {
                     price = "S/ ${producto.precioTotal.formatDecimal()}",
                     co2 = "${producto.factorCo2.formatDecimal()} Kg",
                     isEco = producto.esLocal == true || producto.tieneEmpaqueEcologico == true,
-                    isHighImpact = producto.factorCo2 > 2.0
+                    isHighImpact = producto.factorCo2 > 2.0,
+                    hasEnvironmentalTrace = producto.rangosAmbientales != null,
+                    onTraceClick = { onProductTraceClick(producto) }
                 )
             }
 
@@ -408,18 +426,6 @@ fun ReceiptCard(boleta: org.codi.data.api.models.BoletaDetalle) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Resumen de productos eco-amigables
-            val productosEco = boleta.productos.count { it.esLocal == true || it.tieneEmpaqueEcologico == true }
-            val totalProductos = boleta.productos.size
-            Text(
-                text = "$productosEco Productos Eco-amigables de $totalProductos",
-                style = CodiThemeValues.typography.bodySmall,
-                color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
 
             // Tipo ambiental
             boleta.tipoAmbiental?.let { tipo ->
@@ -443,15 +449,38 @@ fun ReceiptItem(
     price: String,
     co2: String,
     isEco: Boolean = false,
-    isHighImpact: Boolean = false
+    isHighImpact: Boolean = false,
+    hasEnvironmentalTrace: Boolean = false,
+    onTraceClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Icono de información a la izquierda
+        Box(
+            modifier = Modifier.width(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            if (hasEnvironmentalTrace) {
+                IconButton(
+                    onClick = onTraceClick,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Ver rastro ambiental",
+                        tint = Color(0xFF3b82f6),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
+
+        // Descripción del producto
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -471,25 +500,35 @@ fun ReceiptItem(
                 color = if (isEco) PrimaryGreen else CodiThemeValues.colorScheme.onBackground
             )
         }
+
+        // Cantidad
         Text(
             text = quantity,
             style = CodiThemeValues.typography.bodySmall,
             color = CodiThemeValues.colorScheme.onBackground,
-            modifier = Modifier.weight(0.5f),
+            modifier = Modifier.width(50.dp),
             textAlign = TextAlign.Center
         )
+
+        // Precio
         Text(
             text = price,
             style = CodiThemeValues.typography.bodySmall,
             color = CodiThemeValues.colorScheme.onBackground,
-            modifier = Modifier.weight(0.7f),
+            modifier = Modifier.width(60.dp),
             textAlign = TextAlign.End
         )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // CO2
         Text(
             text = co2,
-            style = CodiThemeValues.typography.bodySmall.copy(fontWeight = if (isHighImpact) FontWeight.Bold else FontWeight.Normal),
+            style = CodiThemeValues.typography.bodySmall.copy(
+                fontWeight = if (isHighImpact) FontWeight.Bold else FontWeight.Normal
+            ),
             color = if (isHighImpact) Color(0xFFE53935) else if (isEco) PrimaryGreen else CodiThemeValues.colorScheme.onBackground,
-            modifier = Modifier.weight(0.6f),
+            modifier = Modifier.width(55.dp),
             textAlign = TextAlign.End
         )
     }
@@ -508,12 +547,7 @@ fun RecommendationsSection(response: RecommendationsResponse? = null) {
              // Mostrar lista real de recomendaciones
              val items = response.data.recomendaciones
              items.forEach { item ->
-                 RecommendationCard(
-                     productName = item.productoRecomendado.nombre,
-                     co2Saved = "${item.mejora.co2Ahorrado.formatDecimal()} Kg de CO₂ vs ${item.productoOriginal.co2.formatDecimal()} Kg",
-                     storeName = item.productoRecomendado.tienda ?: "-",
-                     price = "-"
-                 )
+                 RecommendationCard(item = item)
              }
 
              Spacer(modifier = Modifier.height(8.dp))
@@ -540,73 +574,294 @@ fun RecommendationsSection(response: RecommendationsResponse? = null) {
                              style = CodiThemeValues.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                              color = PrimaryGreen
                          )
-                     }
-                 }
-             }
-         }
-     }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
 fun RecommendationCard(
-    productName: String,
-    co2Saved: String,
-    storeName: String,
-    price: String
+    item: org.codi.data.api.models.RecommendationItem
 ) {
+    val originalProduct = item.productoOriginal
+    val recommendedProduct = item.productoRecomendado
+    val improvement = item.mejora
+
     Surface(
         color = Color.White,
-        shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, SecondaryGreen.copy(alpha = 0.3f)),
+        shape = RoundedCornerShape(16.dp),
+        shadowElevation = 2.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.SwapHoriz,
-                contentDescription = null,
-                tint = PrimaryGreen,
-                modifier = Modifier.size(24.dp)
-            )
-
-            Column(
-                modifier = Modifier.weight(1f)
+            // Header con tipo de recomendación
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = productName,
-                    style = CodiThemeValues.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = CodiThemeValues.colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = co2Saved,
-                    style = CodiThemeValues.typography.bodySmall,
-                    color = PrimaryGreen
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                val tipoTexto = when (item.tipo) {
+                    "ALTERNATIVA_MISMA_TIENDA" -> "Misma tienda"
+                    "ALTERNATIVA_OTRA_TIENDA" -> "Otra tienda"
+                    else -> item.tipo
+                }
+
+                Surface(
+                    color = PrimaryGreen.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(6.dp)
                 ) {
-                    Surface(
-                        color = Color(0xFFFFEBEE),
-                        shape = RoundedCornerShape(4.dp)
+                    Text(
+                        text = tipoTexto,
+                        style = CodiThemeValues.typography.labelSmall,
+                        color = PrimaryGreen,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+
+                // Score de similitud
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = Color(0xFFFFA000),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "${(item.scoreSimilitud * 100).formatDecimal(0)}% similar",
+                        style = CodiThemeValues.typography.labelSmall,
+                        color = CodiThemeValues.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Producto original
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Surface(
+                    color = Color(0xFFFFEBEE),
+                    shape = CircleShape,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        Text(
-                            text = storeName,
-                            style = CodiThemeValues.typography.labelSmall,
-                            color = Color(0xFFE53935),
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = null,
+                            tint = Color(0xFFE53935),
+                            modifier = Modifier.size(20.dp)
                         )
                     }
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = price,
-                        style = CodiThemeValues.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                        color = CodiThemeValues.colorScheme.onBackground
+                        text = "Producto actual",
+                        style = CodiThemeValues.typography.labelSmall,
+                        color = CodiThemeValues.colorScheme.onSurfaceVariant
                     )
+                    Text(
+                        text = originalProduct.nombre,
+                        style = CodiThemeValues.typography.bodyMedium,
+                        color = CodiThemeValues.colorScheme.onSurface,
+                        maxLines = 2
+                    )
+                }
+
+                Text(
+                    text = "${originalProduct.co2.formatDecimal()} Kg CO₂",
+                    style = CodiThemeValues.typography.labelMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = Color(0xFFE53935)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Flecha de cambio
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowDownward,
+                    contentDescription = null,
+                    tint = PrimaryGreen,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Producto recomendado
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Surface(
+                    color = PrimaryGreen.copy(alpha = 0.15f),
+                    shape = CircleShape,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = PrimaryGreen,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Alternativa recomendada",
+                        style = CodiThemeValues.typography.labelSmall,
+                        color = CodiThemeValues.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = recommendedProduct.nombre,
+                        style = CodiThemeValues.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = CodiThemeValues.colorScheme.onSurface,
+                        maxLines = 2
+                    )
+                }
+
+                Text(
+                    text = "${recommendedProduct.co2.formatDecimal()} Kg CO₂",
+                    style = CodiThemeValues.typography.labelMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = PrimaryGreen
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Información de tienda, marca y precio
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Logo de tienda
+                if (recommendedProduct.logoTienda != null) {
+                    StoreLogo(
+                        logoUrl = recommendedProduct.logoTienda,
+                        storeName = recommendedProduct.tienda ?: "",
+                        modifier = Modifier.size(24.dp),
+                        size = 24.dp
+                    )
+                }
+
+                // Nombre de tienda
+                if (recommendedProduct.tienda != null) {
+                    Text(
+                        text = recommendedProduct.tienda,
+                        style = CodiThemeValues.typography.labelMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = CodiThemeValues.colorScheme.onSurface
+                    )
+                }
+
+                // Marca
+                if (recommendedProduct.marca != null) {
+                    Text(
+                        text = "• ${recommendedProduct.marca}",
+                        style = CodiThemeValues.typography.labelMedium,
+                        color = CodiThemeValues.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Precio
+                if (recommendedProduct.precio != null) {
+                    Text(
+                        text = "S/ ${recommendedProduct.precio.formatDecimal()}",
+                        style = CodiThemeValues.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = CodiThemeValues.colorScheme.onSurface
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            HorizontalDivider(color = CodiThemeValues.colorScheme.outlineVariant)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Mejora destacada
+            Surface(
+                color = PrimaryGreen.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Eco,
+                            contentDescription = null,
+                            tint = PrimaryGreen,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Column {
+                            Text(
+                                text = "Ahorrarías",
+                                style = CodiThemeValues.typography.labelSmall,
+                                color = PrimaryGreen
+                            )
+                            Text(
+                                text = "${improvement.co2Ahorrado.formatDecimal()} Kg CO₂",
+                                style = CodiThemeValues.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = PrimaryGreen
+                            )
+                        }
+                    }
+
+                    Surface(
+                        color = PrimaryGreen,
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Text(
+                            text = "-${improvement.porcentaje.formatDecimal(0)}%",
+                            style = CodiThemeValues.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                        )
+                    }
                 }
             }
         }

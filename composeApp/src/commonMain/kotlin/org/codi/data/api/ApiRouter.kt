@@ -96,6 +96,15 @@ class ApiRouter(
         )
     }
 
+    // Nueva función para registro usando DNI (dni,email,password)
+    suspend fun registerByDni(registerRequest: org.codi.data.api.models.RegisterByDniRequest): RegisterResponse {
+        return request<RegisterResponse>(
+            method = HttpMethod.Post,
+            path = "/auth/register",
+            body = registerRequest
+        )
+    }
+
     // Nueva función específica para login
     suspend fun login(loginRequest: LoginRequest): LoginResponse {
         return request<LoginResponse>(

@@ -11,6 +11,13 @@ data class RegisterRequest(
 )
 
 @Serializable
+data class RegisterByDniRequest(
+    val dni: String,
+    val email: String,
+    val password: String
+)
+
+@Serializable
 data class LoginRequest(
     val email: String,
     val password: String
@@ -46,4 +53,3 @@ data class RegisterResponse(
 )
 
 typealias LoginResponse = RegisterResponse
-

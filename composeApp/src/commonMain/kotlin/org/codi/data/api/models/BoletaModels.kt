@@ -9,6 +9,39 @@ import kotlinx.serialization.Serializable
 // ===== Modelos para GET /boletas/{boletaId} =====
 
 @Serializable
+data class RangoZona(
+    val min: Double,
+    val max: Double? = null,
+    val label: String,
+    val color: String? = null
+)
+
+@Serializable
+data class RangosAmbientalesData(
+    val verde: RangoZona,
+    val amarillo: RangoZona,
+    val rojo: RangoZona
+)
+
+@Serializable
+data class TuPosicion(
+    val valor: Double,
+    val zona: String,
+    val porcentajeEnZona: Double,
+    val mensaje: String
+)
+
+@Serializable
+data class RangosAmbientales(
+    val subcategoria: String,
+    val huella_media_kg_co2_por_kg: Double,
+    val rango_min: Double,
+    val rango_max: Double,
+    val rangos: RangosAmbientalesData,
+    val tuPosicion: TuPosicion
+)
+
+@Serializable
 data class ProductoBoleta(
     val id: String,
     val nombre: String,
@@ -20,7 +53,8 @@ data class ProductoBoleta(
     val subcategoria: String? = null,
     val marca: String? = null,
     val esLocal: Boolean? = null,
-    val tieneEmpaqueEcologico: Boolean? = null
+    val tieneEmpaqueEcologico: Boolean? = null,
+    val rangosAmbientales: RangosAmbientales? = null
 )
 
 @Serializable
