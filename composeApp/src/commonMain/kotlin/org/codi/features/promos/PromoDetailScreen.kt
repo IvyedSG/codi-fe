@@ -3,7 +3,6 @@ package org.codi.features.promos
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -23,7 +22,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.codi.data.api.models.Promocion
 import org.codi.theme.CodiThemeValues
-import org.codi.theme.PrimaryGreen
 import org.codi.theme.SecondaryGreen
 
 /**
@@ -332,30 +330,20 @@ private fun PromoImageBanner(promocion: Promocion) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Surface(
+                // Logo de tienda desde URL
+                org.codi.common.components.StoreLogo(
+                    logoUrl = tienda.urlLogo,
+                    storeName = tienda.nombre,
                     modifier = Modifier.size(100.dp),
-                    shape = CircleShape,
-                    color = Color.White,
-                    shadowElevation = 4.dp
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Store,
-                            contentDescription = null,
-                            tint = PrimaryGreen,
-                            modifier = Modifier.size(50.dp)
-                        )
-                    }
-                }
+                    size = 100.dp
+                )
+
                 Text(
                     text = tienda.nombre,
                     style = CodiThemeValues.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold
                     ),
-                    color = PrimaryGreen
+                    color = Color.Black
                 )
             }
         } ?: run {
@@ -363,7 +351,7 @@ private fun PromoImageBanner(promocion: Promocion) {
             Icon(
                 imageVector = Icons.Default.LocalOffer,
                 contentDescription = null,
-                tint = SecondaryGreen.copy(alpha = 0.3f),
+                tint = Color.Black.copy(alpha = 0.6f),
                 modifier = Modifier.size(80.dp)
             )
         }

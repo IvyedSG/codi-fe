@@ -2,8 +2,6 @@ package org.codi.features.promos.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -11,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import org.codi.common.components.StoreLogo
 import org.codi.data.api.models.Promocion
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.SecondaryGreen
@@ -49,24 +48,13 @@ fun PromocionItem(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Logo de tienda (placeholder)
-                    Surface(
-                        color = SecondaryGreen.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Store,
-                                contentDescription = null,
-                                tint = SecondaryGreen,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
+                    // Logo de tienda desde URL
+                    StoreLogo(
+                        logoUrl = promocion.tienda?.urlLogo,
+                        storeName = promocion.tienda?.nombre ?: "Tienda",
+                        modifier = Modifier.size(40.dp),
+                        size = 40.dp
+                    )
 
                     Text(
                         text = promocion.tienda?.nombre ?: "Tienda",

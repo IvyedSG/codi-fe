@@ -6,14 +6,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Store
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
@@ -27,41 +30,55 @@ actual fun StoreLogo(
     size: Dp
 ) {
     val shape = CircleShape
-    // Contenedor circular fijo; dentro colocamos la imagen con padding para preservar aspecto
+    // Contenedor circular con fondo blanco para mejor visibilidad de logos
     Box(
         modifier = modifier
             .size(size)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surface),
+            .background(Color.White),
         contentAlignment = Alignment.Center
     ) {
         if (logoUrl.isNullOrBlank()) {
-            // Fallback: inicial
-            Text(
-                text = storeName.firstOrNull()?.uppercase() ?: "T",
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
+            // Fallback: ícono de tienda
+            Icon(
+                imageVector = Icons.Default.Store,
+                contentDescription = storeName,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(size * 0.5f)
             )
         } else {
-            // Cargamos la imagen centrada y recortada dentro del círculo para llenar el espacio
+            // Cargamos la imagen con manejo explícito de estados
             SubcomposeAsyncImage(
                 model = logoUrl,
                 contentDescription = "Logo $storeName",
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(4.dp), // espacio interior ligero
-                contentScale = ContentScale.Crop, // llenar el círculo recortando si es necesario
+                    .padding(8.dp), // padding para que el logo no toque los bordes
+                contentScale = ContentScale.Fit, // Mantener proporción sin recortar
             ) {
                 val state = painter.state
-                if (state is coil.compose.AsyncImagePainter.State.Loading || state is coil.compose.AsyncImagePainter.State.Empty) {
-                    // placeholder: inicial pequeña
-                    Text(
-                        text = storeName.firstOrNull()?.uppercase() ?: "T",
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                } else {
-                    SubcomposeAsyncImageContent()
+                when (state) {
+                    is coil.compose.AsyncImagePainter.State.Loading -> {
+                        // Indicador de carga
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(size * 0.4f),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 2.dp
+                        )
+                    }
+                    is coil.compose.AsyncImagePainter.State.Error -> {
+                        // Fallback en caso de error: ícono de tienda
+                        Icon(
+                            imageVector = Icons.Default.Store,
+                            contentDescription = storeName,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(size * 0.5f)
+                        )
+                    }
+                    else -> {
+                        // Imagen cargada exitosamente
+                        SubcomposeAsyncImageContent()
+                    }
                 }
             }
         }

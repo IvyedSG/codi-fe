@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import org.codi.common.components.StoreLogo
 import org.codi.data.api.models.Promocion
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.SecondaryGreen
@@ -50,24 +51,13 @@ fun RedeemedPromoItem(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Logo de tienda
-                        Surface(
-                            color = Color.White,
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.size(44.dp)
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Store,
-                                    contentDescription = null,
-                                    tint = Color.Black,
-                                    modifier = Modifier.size(26.dp)
-                                )
-                            }
-                        }
+                        // Logo de tienda desde URL
+                        StoreLogo(
+                            logoUrl = promocion.tienda?.urlLogo,
+                            storeName = promocion.tienda?.nombre ?: "Tienda",
+                            modifier = Modifier.size(44.dp),
+                            size = 44.dp
+                        )
 
                         Text(
                             text = promocion.tienda?.nombre ?: "Tienda",
