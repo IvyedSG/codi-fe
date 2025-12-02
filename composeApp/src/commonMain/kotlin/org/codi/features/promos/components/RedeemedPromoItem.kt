@@ -18,7 +18,7 @@ import org.codi.theme.SecondaryGreen
 @Composable
 fun RedeemedPromoItem(
     promocion: Promocion,
-    onVerDetalle: (String) -> Unit
+    onVerDetalle: (Promocion) -> Unit
 ) {
     Surface(
         modifier = Modifier
@@ -31,139 +31,151 @@ fun RedeemedPromoItem(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(0.dp)
         ) {
-            // Header con logo de tienda y badge de "Canjeada"
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            // Topbar verde claro
+            Surface(
+                color = SecondaryGreen.copy(alpha = 0.12f),
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Logo de tienda
-                    Surface(
-                        color = SecondaryGreen.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.size(40.dp)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
+                        // Logo de tienda
+                        Surface(
+                            color = Color.White,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Store,
+                                    contentDescription = null,
+                                    tint = Color.Black,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = promocion.tienda?.nombre ?: "Tienda",
+                            style = CodiThemeValues.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = Color.Black
+                        )
+                    }
+
+                    // Badge de "Canjeada"
+                    Surface(
+                        color = Color(0xFF4CAF50).copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Store,
+                                imageVector = Icons.Default.CheckCircle,
                                 contentDescription = null,
-                                tint = SecondaryGreen,
-                                modifier = Modifier.size(24.dp)
+                                tint = Color.Black,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Canjeada",
+                                style = CodiThemeValues.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = Color.Black
                             )
                         }
                     }
+                }
+            }
 
+            // Contenido del card
+            Column(modifier = Modifier.padding(16.dp)) {
+                // Título
+                Text(
+                    text = promocion.titulo,
+                    style = CodiThemeValues.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = Color.Black
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Tipo de promoción
+                Surface(
+                    color = SecondaryGreen.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
                     Text(
-                        text = promocion.tienda?.nombre ?: "Tienda",
-                        style = CodiThemeValues.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = CodiThemeValues.colorScheme.onBackground
+                        text = promocion.tipoPromocion,
+                        style = CodiThemeValues.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                        color = Color.Black,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
 
-                // Badge de "Canjeada"
-                Surface(
-                    color = Color(0xFF4CAF50).copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Fecha de uso si está disponible
+                promocion.fechaUso?.let { fecha ->
                     Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Default.CheckCircle,
+                            imageVector = Icons.Default.CalendarToday,
                             contentDescription = null,
-                            tint = Color(0xFF4CAF50),
-                            modifier = Modifier.size(14.dp)
+                            tint = Color.Black.copy(alpha = 0.7f),
+                            modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = "Canjeada",
-                            style = CodiThemeValues.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = Color(0xFF4CAF50)
+                            text = "Canjeado: ${formatearFecha(fecha)}",
+                            style = CodiThemeValues.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                            color = Color.Black.copy(alpha = 0.7f)
                         )
                     }
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Título
-            Text(
-                text = promocion.titulo,
-                style = CodiThemeValues.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = CodiThemeValues.colorScheme.onBackground
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Tipo de promoción
-            Surface(
-                color = SecondaryGreen.copy(alpha = 0.1f),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(
-                    text = promocion.tipoPromocion,
-                    style = CodiThemeValues.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = CodiThemeValues.colorScheme.onBackground,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Fecha de uso si está disponible
-            promocion.fechaUso?.let { fecha ->
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // Botón para ver detalle
+                Button(
+                    onClick = { onVerDetalle(promocion) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Black,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarToday,
-                        contentDescription = null,
-                        tint = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.6f),
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = "Canjeado: ${formatearFecha(fecha)}",
-                        style = CodiThemeValues.typography.bodySmall,
-                        color = CodiThemeValues.colorScheme.onBackground.copy(alpha = 0.6f)
-                    )
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
-            // Botón para ver detalle
-            Button(
-                onClick = { onVerDetalle(promocion.id) },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = SecondaryGreen,
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = "Ver Detalles",
-                        style = CodiThemeValues.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "Ver Detalles",
+                            style = CodiThemeValues.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }

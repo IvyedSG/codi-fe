@@ -37,6 +37,7 @@ class ApiRouter(
 
         val url = "$baseUrl$resolvedPath"
 
+
         val httpResponse: HttpResponse = client.request(url) {
             this.method = method
             // Query params

@@ -20,7 +20,7 @@ fun PromocionItem(
     promocion: Promocion,
     puntosUsuario: Int,
     onCanjear: (String) -> Unit,
-    onVerDetalle: (String) -> Unit = {}
+    onVerDetalle: (Promocion) -> Unit = {}
 ) {
     var showDialog by remember { mutableStateOf(false) }
     val canCanjear = puntosUsuario >= promocion.boletasRequeridas
@@ -32,7 +32,7 @@ fun PromocionItem(
         color = Color.White,
         shape = RoundedCornerShape(16.dp),
         shadowElevation = 2.dp,
-        onClick = { onVerDetalle(promocion.id) }
+        onClick = { onVerDetalle(promocion) }
     ) {
         Column(
             modifier = Modifier
@@ -119,8 +119,8 @@ fun PromocionItem(
                 Column {
                     Text(
                         text = "Boletas requeridas: ${promocion.boletasRequeridas}",
-                        style = CodiThemeValues.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = CodiThemeValues.colorScheme.onBackground
+                        style = CodiThemeValues.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                        color = Color.Black
                     )
                     if (!canCanjear && promocion.disponible != false) {
                         Text(
@@ -133,8 +133,14 @@ fun PromocionItem(
                     if (promocion.disponible == false) {
                         Text(
                             text = "✓ Ya canjeaste esta promoción",
-                            style = CodiThemeValues.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                            style = CodiThemeValues.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                             color = Color(0xFF4CAF50)
+                        )
+                    } else if (canCanjear) {
+                        Text(
+                            text = "Promoción disponible para canje",
+                            style = CodiThemeValues.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            color = SecondaryGreen
                         )
                     }
                 }

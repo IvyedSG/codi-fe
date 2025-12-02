@@ -14,10 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import org.codi.data.api.models.Promocion
 import org.codi.features.promos.components.PromocionItem
 import org.codi.features.promos.components.RedeemedPromoItem
 import org.codi.features.promos.components.PromoDetailDialog
@@ -50,8 +49,10 @@ object PromosTab : Tab {
 @Composable
 fun PromosScreen(viewModel: PromoViewModel) {
     val state = viewModel.state
-    val navigator = LocalNavigator.currentOrThrow
-    var selectedPromocionId by remember { mutableStateOf<String?>(null) }
+
+    // Para manejar el clic en una promoción, guardamos temporalmente cual fue seleccionada
+    // y usamos el Dialog como fallback (ya que no podemos navegar desde un Tab directamente)
+    var selectedPromocion by remember { mutableStateOf<Promocion?>(null) }
 
     // Auto-ocultar el error después de 5 segundos
     LaunchedEffect(state.error) {
@@ -124,14 +125,14 @@ fun PromosScreen(viewModel: PromoViewModel) {
                 0 -> PromocionesDisponiblesContent(
                     viewModel = viewModel,
                     state = state,
-                    onVerDetalle = { promocionId ->
-                        navigator.push(PromoDetailScreen(promocionId))
+                    onVerDetalle = { promocion ->
+                        selectedPromocion = promocion
                     }
                 )
                 1 -> PromocionesCanjeadasContent(
                     state = state,
-                    onVerDetalle = { promocionId ->
-                        selectedPromocionId = promocionId
+                    onVerDetalle = { promocion ->
+                        selectedPromocion = promocion
                     }
                 )
             }
@@ -168,11 +169,12 @@ fun PromosScreen(viewModel: PromoViewModel) {
         }
     }
 
-    // Diálogo de detalle de promoción
-    selectedPromocionId?.let { promocionId ->
-        PromoDetailDialog(
-            promocionId = promocionId,
-            onDismiss = { selectedPromocionId = null }
+    // Diálogo de detalle de promoción en pantalla completa
+    selectedPromocion?.let { promocion ->
+        PromoDetailFullScreen(
+            promocion = promocion,
+            onDismiss = { selectedPromocion = null },
+            viewModel = viewModel
         )
     }
 }
@@ -181,7 +183,7 @@ fun PromosScreen(viewModel: PromoViewModel) {
 private fun PromocionesDisponiblesContent(
     viewModel: PromoViewModel,
     state: PromoState,
-    onVerDetalle: (String) -> Unit
+    onVerDetalle: (Promocion) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize()
@@ -253,7 +255,7 @@ private fun PromocionesDisponiblesContent(
 @Composable
 private fun PromocionesCanjeadasContent(
     state: PromoState,
-    onVerDetalle: (String) -> Unit
+    onVerDetalle: (Promocion) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize()
