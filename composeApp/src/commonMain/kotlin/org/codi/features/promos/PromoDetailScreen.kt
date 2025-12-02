@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.codi.data.api.models.Promocion
 import org.codi.theme.CodiThemeValues
 import org.codi.theme.PrimaryGreen
@@ -56,6 +58,20 @@ private fun PromoDetailContent(
 ) {
     val scrollState = rememberScrollState()
     var showCanjearDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    var isProcessing by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
+    // Observar cambios en el estado del ViewModel para mostrar errores o éxito
+    LaunchedEffect(viewModel?.state?.error) {
+        viewModel?.state?.error?.let { errorMsg ->
+            snackbarHostState.showSnackbar(
+                message = errorMsg,
+                duration = SnackbarDuration.Long
+            )
+            viewModel.clearError()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -92,7 +108,7 @@ private fun PromoDetailContent(
             ) {
                 Button(
                     onClick = {
-                        if (viewModel != null) {
+                        if (viewModel != null && !isProcessing) {
                             showCanjearDialog = true
                         }
                     },
@@ -104,15 +120,40 @@ private fun PromoDetailContent(
                         containerColor = SecondaryGreen
                     ),
                     shape = RoundedCornerShape(28.dp),
-                    enabled = promocion.activa && promocion.disponible != false && viewModel != null
+                    enabled = promocion.activa && promocion.disponible != false && viewModel != null && !isProcessing
                 ) {
-                    Text(
-                        text = if (promocion.disponible == false) "Ya Canjeada" else "Usar Promoción",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    if (isProcessing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = if (promocion.disponible == false) "Ya Canjeada" else "Usar Promoción",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
+            }
+        },
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(16.dp)
+            ) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = if (data.visuals.message.contains("éxito", ignoreCase = true)) {
+                        Color(0xFF4CAF50)
+                    } else {
+                        MaterialTheme.colorScheme.errorContainer
+                    },
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(12.dp)
+                )
             }
         }
     ) { padding ->
@@ -181,18 +222,24 @@ private fun PromoDetailContent(
     // Diálogo de confirmación para canjear
     if (showCanjearDialog) {
         AlertDialog(
-            onDismissRequest = { showCanjearDialog = false },
+            onDismissRequest = {
+                if (!isProcessing) {
+                    showCanjearDialog = false
+                }
+            },
             title = {
                 Text(
                     text = "Confirmar canje",
-                    style = CodiThemeValues.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                    style = CodiThemeValues.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = Color.Black
                 )
             },
             text = {
                 Column {
                     Text(
                         text = "¿Deseas canjear esta promoción?",
-                        style = CodiThemeValues.typography.bodyMedium
+                        style = CodiThemeValues.typography.bodyMedium,
+                        color = Color.Black
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -213,17 +260,54 @@ private fun PromoDetailContent(
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel?.canjearPromocion(promocion.id)
-                        showCanjearDialog = false
-                        onNavigateBack() // Cerrar la vista de detalle después de canjear
+                        coroutineScope.launch {
+                            isProcessing = true
+                            showCanjearDialog = false
+
+                            try {
+                                viewModel?.canjearPromocion(promocion.id)
+
+                                // Esperar un momento para que se procese
+                                delay(500)
+
+                                // Verificar si hay error en el estado
+                                if (viewModel?.state?.error == null) {
+                                    snackbarHostState.showSnackbar(
+                                        message = "¡Promoción canjeada con éxito!",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                    delay(1500)
+                                    onNavigateBack()
+                                }
+                            } catch (e: Exception) {
+                                snackbarHostState.showSnackbar(
+                                    message = "Error al canjear: ${e.message ?: "Error desconocido"}",
+                                    duration = SnackbarDuration.Long
+                                )
+                            } finally {
+                                isProcessing = false
+                            }
+                        }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = SecondaryGreen)
+                    colors = ButtonDefaults.buttonColors(containerColor = SecondaryGreen),
+                    enabled = !isProcessing
                 ) {
-                    Text("Confirmar")
+                    if (isProcessing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Confirmar", color = Color.White)
+                    }
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showCanjearDialog = false }) {
+                TextButton(
+                    onClick = { showCanjearDialog = false },
+                    enabled = !isProcessing
+                ) {
                     Text("Cancelar", color = Color.Gray)
                 }
             }

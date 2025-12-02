@@ -41,6 +41,13 @@ class ProfileViewModel {
     var isUpdating = mutableStateOf(false)
         private set
 
+    // Estados para mensajes de feedback
+    var successMessage = mutableStateOf<String?>(null)
+        private set
+
+    var errorMessage = mutableStateOf<String?>(null)
+        private set
+
     private val repository = ProfileRepository(ApiClient.router)
     private val cache = CacheManager<ProfileResponse>()
 
@@ -56,6 +63,7 @@ class ProfileViewModel {
                 val userId = TokenStorage.getUserId()
                 if (userId.isNullOrBlank()) {
                     state = ProfileState.Error("Usuario no autenticado")
+                    errorMessage.value = "Sesión expirada. Por favor, inicia sesión nuevamente."
                     return@launch
                 }
 
@@ -96,7 +104,9 @@ class ProfileViewModel {
                         isRefreshing = false
                     )
                 } else {
-                    state = ProfileState.Error(response.error ?: response.message.takeIf { it.isNotBlank() } ?: "Error al cargar el perfil")
+                    val errorMsg = response.error ?: response.message.takeIf { it.isNotBlank() } ?: "Error al cargar el perfil"
+                    state = ProfileState.Error(errorMsg)
+                    errorMessage.value = errorMsg
                 }
             } catch (e: Exception) {
                 // Si hay datos en caché, mostrarlos aunque haya error
@@ -106,8 +116,11 @@ class ProfileViewModel {
                         profile = cachedData,
                         isRefreshing = false
                     )
+                    errorMessage.value = "No se pudo actualizar. Mostrando datos guardados."
                 } else {
-                    state = ProfileState.Error(e.message ?: "Error desconocido")
+                    val errorMsg = e.message ?: "Error de conexión. Verifica tu conexión a internet."
+                    state = ProfileState.Error(errorMsg)
+                    errorMessage.value = errorMsg
                 }
             }
         }
@@ -175,6 +188,7 @@ class ProfileViewModel {
      */
     fun updateProfile() {
         if (tempName.value.isBlank() || tempLastName.value.isBlank()) {
+            errorMessage.value = "El nombre y apellido no pueden estar vacíos"
             return
         }
 
@@ -210,15 +224,24 @@ class ProfileViewModel {
                             // Actualizar caché con nuevos datos
                             cache.set(updatedProfile)
                         }
+                        successMessage.value = "✓ Perfil actualizado correctamente"
                         closeEditDialog()
                     } else {
-                        state = ProfileState.Error(response.error ?: "Error al actualizar el perfil")
+                        val errorMsg = response.error ?: "Error al actualizar el perfil"
+                        errorMessage.value = errorMsg
                     }
                 }.onFailure { exception ->
-                    state = ProfileState.Error(exception.message ?: "Error al actualizar el perfil")
+                    val errorMsg = when {
+                        exception.message?.contains("network", ignoreCase = true) == true ->
+                            "Error de conexión. Verifica tu internet."
+                        exception.message?.contains("timeout", ignoreCase = true) == true ->
+                            "La operación tardó demasiado. Inténtalo de nuevo."
+                        else -> exception.message ?: "Error al actualizar el perfil"
+                    }
+                    errorMessage.value = errorMsg
                 }
             } catch (e: Exception) {
-                state = ProfileState.Error(e.message ?: "Error desconocido")
+                errorMessage.value = "Error inesperado: ${e.message ?: "Inténtalo de nuevo"}"
             } finally {
                 isUpdating.value = false
             }
@@ -234,10 +257,19 @@ class ProfileViewModel {
             try {
                 TokenStorage.clear()
                 cache.clear()
-            } catch (_: Exception) {
-                // Ignorar errores al limpiar
+                successMessage.value = "Sesión cerrada correctamente"
+            } catch (e: Exception) {
+                errorMessage.value = "Error al cerrar sesión: ${e.message}"
             }
         }
+    }
+
+    /**
+     * Limpia los mensajes de éxito y error
+     */
+    fun clearMessages() {
+        successMessage.value = null
+        errorMessage.value = null
     }
 
     /**
