@@ -9,6 +9,8 @@
         <domain includeSubdomains="true">10.0.2.2</domain>
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>
+        <!-- Backend desplegado -->
+        <domain includeSubdomains="true">72.61.45.31</domain>
     </domain-config>
 
     <!-- Cuando la app sea debuggable (build tipo debug), permitir cleartext globalmente para facilitar testing -->
