@@ -115,6 +115,12 @@ object LoginScreen : Screen {
                                     TokenStorage.saveToken(token)
                                 } catch (_: Throwable) {}
                             }
+                            // Guardar el refreshToken
+                            resp.data.refreshToken.takeIf { it.isNotBlank() }?.let { refreshToken ->
+                                try {
+                                    TokenStorage.saveRefreshToken(refreshToken)
+                                } catch (_: Throwable) {}
+                            }
                             // Guardar el userId
                             resp.data.user.id.takeIf { it.isNotBlank() }?.let { userId ->
                                 try {
@@ -279,6 +285,12 @@ object LoginScreen : Screen {
                                             resp.data.token.takeIf { it.isNotBlank() }?.let { token ->
                                                 try {
                                                     TokenStorage.saveToken(token)
+                                                } catch (_: Throwable) {}
+                                            }
+                                            // Guardar el refreshToken
+                                            resp.data.refreshToken.takeIf { it.isNotBlank() }?.let { refreshToken ->
+                                                try {
+                                                    TokenStorage.saveRefreshToken(refreshToken)
                                                 } catch (_: Throwable) {}
                                             }
                                             // Guardar el userId

@@ -4,12 +4,9 @@ import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.request.HttpRequestPipeline
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.codi.data.storage.TokenStorage
+import io.ktor.serialization.kotlinx.json.json
 
 /**
  * Función expect que será implementada en cada plataforma
@@ -22,59 +19,55 @@ expect fun createHttpClient(): HttpClient
  * Usa Ktor con serialización JSON.
  */
 object ApiClient {
-
-    /**
-     * Cliente HTTP configurado con negociación de contenido JSON, logging, timeout
-     * y un interceptor de autenticación JWT que adjunta automáticamente el token Bearer.
-     */
     private val httpClient = createHttpClient().config {
         install(ContentNegotiation) {
-            json(Json {
-                prettyPrint = true
-                isLenient = true
-                ignoreUnknownKeys = true
-            })
+            json(
+                Json {
+                    prettyPrint = true
+                    isLenient = true
+                    ignoreUnknownKeys = true
+                }
+            )
         }
-
         install(Logging) {
             logger = Logger.SIMPLE
             level = LogLevel.INFO
         }
-
         install(HttpTimeout) {
-            requestTimeoutMillis = 30000  // 30 segundos para requests normales
+            requestTimeoutMillis = 30000
             connectTimeoutMillis = 10000
             socketTimeoutMillis = 30000
         }
-    }.also { client ->
-        // Interceptor de Autenticación JWT
-        // Este interceptor adjunta automáticamente el token Bearer a cada request
-        client.requestPipeline.intercept(HttpRequestPipeline.State) {
-            // Verificar si la ruta NO es de autenticación pública
-            val path = context.url.encodedPath
-            val isAuthEndpoint = path.contains("/auth/login") ||
-                               path.contains("/auth/register") ||
-                               path.contains("/auth/google")
-
-            // Si no es un endpoint de autenticación, adjuntar el token
-            if (!isAuthEndpoint) {
-                // Obtener el token de forma segura desde TokenStorage
-                val token = runBlocking {
-                    TokenStorage.getToken()
-                }
-
-                // Si existe el token, adjuntarlo al header Authorization
-                token?.let {
-                    context.headers.append(HttpHeaders.Authorization, "Bearer $it")
-                }
-            }
-        }
     }
-
     /**
      * Router API para hacer llamadas a endpoints
      */
     val router = ApiRouter(httpClient, BASE_API_URL)
+
+    suspend fun <T> withAuthRetry(block: suspend () -> T): T {
+        try {
+            return block()
+        } catch (e: ApiException) {
+            if (e.status.value == 401) {
+                val refreshToken = TokenStorage.getRefreshToken()
+                if (refreshToken != null) {
+                    try {
+                        val refreshResponse = router.refreshToken(refreshToken)
+                        TokenStorage.saveToken(refreshResponse.token)
+                        TokenStorage.saveRefreshToken(refreshResponse.refreshToken)
+                        // Reintentar la petición original
+                        return block()
+                    } catch (refreshError: Exception) {
+                        TokenStorage.clear()
+                        throw refreshError
+                    }
+                } else {
+                    TokenStorage.clear()
+                }
+            }
+            throw e
+        }
+    }
 }
 
 /**

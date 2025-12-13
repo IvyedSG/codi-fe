@@ -222,6 +222,10 @@ object RegisterScreen : Screen {
                                         resp.data.token.takeIf { it.isNotBlank() }?.let { token ->
                                             try {
                                                 TokenStorage.saveToken(token)
+                                                // Guardar el refreshToken
+                                                resp.data.refreshToken.takeIf { it.isNotBlank() }?.let { refreshToken ->
+                                                    TokenStorage.saveRefreshToken(refreshToken)
+                                                }
                                                 resp.data.user.id.takeIf { it.isNotBlank() }?.let { uid ->
                                                     TokenStorage.saveUserId(uid)
                                                 }

@@ -52,4 +52,15 @@ data class RegisterResponse(
     val error: String? = null
 )
 
+@Serializable
+data class RefreshTokenRequest(
+    val refreshToken: String
+)
+
+@Serializable
+data class RefreshTokenResponse(
+    val token: String,
+    val refreshToken: String
+)
+
 typealias LoginResponse = RegisterResponse

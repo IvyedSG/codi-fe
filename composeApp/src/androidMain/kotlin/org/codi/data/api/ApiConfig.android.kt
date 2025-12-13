@@ -8,8 +8,8 @@ import android.os.Build
  */
 actual val BASE_API_URL: String = if (Build.FINGERPRINT.contains("generic")) {
     // 🧩 Emulador Android
-    "http://72.61.45.31"
+    "http://10.0.2.2:8000"
 } else {
-    // 📱 Dispositivo físico
-    "http://72.61.45.31"
+    // 📱 Forzar uso del emulador también en dispositivos físicos (evitamos usar la IP del PC)
+    "http://192.168.1.39:8000"
 }

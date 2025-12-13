@@ -1,5 +1,6 @@
 package org.codi.data.storage.home
 
+import org.codi.data.api.ApiClient
 import org.codi.data.api.ApiRouter
 import org.codi.data.api.models.HomeResponse
 import org.codi.data.storage.TokenStorage
@@ -12,10 +13,12 @@ class HomeRepository(
      * Obtiene los datos de inicio del usuario autenticado
      */
     suspend fun getHomeData(): Result<HomeResponse> = runCatching {
-        val userId = TokenStorage.getUserId()
-            ?: throw IllegalStateException("Usuario no autenticado")
+        ApiClient.withAuthRetry {
+            val userId = TokenStorage.getUserId()
+                ?: throw IllegalStateException("Usuario no autenticado")
 
-        apiRouter.getHomeData(userId)
+            apiRouter.getHomeData(userId)
+        }
     }
 
     /**
@@ -23,7 +26,8 @@ class HomeRepository(
      * @param userId El ID del usuario (UUID).
      */
     suspend fun getHomeDataByUserId(userId: String): Result<HomeResponse> = runCatching {
-        apiRouter.getHomeData(userId)
+        ApiClient.withAuthRetry {
+            apiRouter.getHomeData(userId)
+        }
     }
 }
-

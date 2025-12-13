@@ -2,6 +2,7 @@
 
 package org.codi.data.storage.profile
 
+import org.codi.data.api.ApiClient
 import org.codi.data.api.ApiRouter
 import org.codi.data.api.models.ProfileResponse
 import org.codi.data.api.models.ProfileUpdateRequest
@@ -19,9 +20,9 @@ class ProfileRepository(
 
     // Función que llama al router
     suspend fun getProfile(userId: String): Result<ProfileResponse> = runCatching {
-        // En un caso real, obtendrías el ID del usuario autenticado aquí,
-        // pero por ahora, lo pasamos como parámetro.
-        apiRouter.getUserProfile(userId)
+        ApiClient.withAuthRetry {
+            apiRouter.getUserProfile(userId)
+        }
     }
 
     /**
@@ -29,9 +30,11 @@ class ProfileRepository(
      * Obtiene el userId desde TokenStorage y llama al endpoint PUT /perfil/{userId}
      */
     suspend fun updateProfile(request: ProfileUpdateRequest): Result<ProfileUpdateResponse> = runCatching {
-        val userId = TokenStorage.getUserId()
-            ?: throw IllegalStateException("Usuario no autenticado")
+        ApiClient.withAuthRetry {
+            val userId = TokenStorage.getUserId()
+                ?: throw IllegalStateException("Usuario no autenticado")
 
-        apiRouter.updateUserProfile(userId, request)
+            apiRouter.updateUserProfile(userId, request)
+        }
     }
 }

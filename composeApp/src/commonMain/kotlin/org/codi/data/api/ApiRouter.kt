@@ -37,9 +37,17 @@ class ApiRouter(
 
         val url = "$baseUrl$resolvedPath"
 
+        // Obtener el token de autenticación
+        val token = org.codi.data.storage.TokenStorage.getToken()
 
         val httpResponse: HttpResponse = client.request(url) {
             this.method = method
+            
+            // Agregar header de autorización si hay token
+            if (!token.isNullOrBlank()) {
+                header("Authorization", "Bearer $token")
+            }
+            
             // Query params
             if (queryParams.isNotEmpty()) {
                 url {
@@ -249,7 +257,15 @@ class ApiRouter(
     ): BoletaUploadResponse {
         val url = "$baseUrl/boletas/{userId}/upload".replace("{userId}", userId)
 
+        // Obtener el token de autenticación
+        val token = org.codi.data.storage.TokenStorage.getToken()
+
         val httpResponse: HttpResponse = client.post(url) {
+            // Agregar header de autorización si hay token
+            if (!token.isNullOrBlank()) {
+                header("Authorization", "Bearer $token")
+            }
+            
             // Timeout extendido para procesamiento de imágenes con OCR
             timeout {
                 requestTimeoutMillis = 60000  // 60 segundos para upload y OCR
@@ -317,6 +333,15 @@ class ApiRouter(
             method = HttpMethod.Get,
             path = "/boletas/{boletaId}/recommendations",
             routeParams = mapOf("boletaId" to boletaId)
+        )
+    }
+
+    // Nueva función para refresh token
+    suspend fun refreshToken(refreshToken: String): RefreshTokenResponse {
+        return request<RefreshTokenResponse>(
+            method = HttpMethod.Post,
+            path = "/auth/refresh-token",
+            body = RefreshTokenRequest(refreshToken)
         )
     }
 
